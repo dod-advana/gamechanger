@@ -1,3 +1,9 @@
+---
+noteId: "1c8d79f1a2bb11eb918ba7f2d608ae88"
+tags: []
+
+---
+
 <img src="./assets/logos/GAMECHANGER-NoPentagon_RGB@3x.png" 
      alt="GC Logo" width="500" >
 
