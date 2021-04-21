@@ -22,7 +22,7 @@ GAMECHANGER aspires to be the Department’s trusted solution for evidence-based
 
 ### Repositories
 
-- [GAMECHANGER](https://github.com/dod-advana/GAMECHANGER)
+- [gamechanger](https://github.com/dod-advana/GAMECHANGER)
 - [gamechanger-data](https://github.com/dod-advana/gamechanger-data)
 - gamechanger-webapp (Coming Soon!)
   
