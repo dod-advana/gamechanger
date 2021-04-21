@@ -4,6 +4,12 @@
 #
 Over 15 thousand documents govern how the Departmentof Defense (DoD) operates. The documents exist in different repositories, often exist on different networks, are discoverable to different communities, are updated independently, and evolve rapidly. No single ability has ever existed that would enable navigation of the vast universe of governing requirements and guidance documents, leaving the Department unable to make evidence-based, data-driven decisions. Today GAMECHANGER offers a scalable solution with an authoritative corpus comprising a single trusted repository of all statutory and policy driven requirements based on Artificial-Intelligence (AI) enabled technologies.
 
+### Repositories
+
+- [gamechanger](https://github.com/dod-advana/GAMECHANGER) (here)
+- [gamechanger-data](https://github.com/dod-advana/gamechanger-data)
+- gamechanger-webapp (Coming Soon!)
+
 #
 <img src="./assets/icons/Brand_Platform.png" align="right"
      alt="Mission Vision Icons" width="320" >
@@ -20,11 +26,6 @@ GAMECHANGER aspires to be the Department’s trusted solution for evidence-based
 - Fusing best practices from industry, academia, and government to advance innovation and research
 - Engaging the open-source community to build generalizable and replicable technology
 
-### Repositories
-
-- [gamechanger](https://github.com/dod-advana/GAMECHANGER)
-- [gamechanger-data](https://github.com/dod-advana/gamechanger-data)
-- gamechanger-webapp (Coming Soon!)
   
 ## License & Contributions
 See LICENSE.md (including licensing intent - INTENT.md) and CONTRIBUTING.md
