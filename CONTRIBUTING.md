@@ -1,9 +1,3 @@
----
-noteId: "1c8d79f0a2bb11eb918ba7f2d608ae88"
-tags: []
-
----
-
 # Contribution Policy
 
 borrowed from https://github.com/Code-dot-mil/code.mil/blob/master/CONTRIBUTING.md

@@ -1,9 +1,3 @@
----
-noteId: "1c8da101a2bb11eb918ba7f2d608ae88"
-tags: []
-
----
-
 MIT License
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
