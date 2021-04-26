@@ -1,0 +1,4 @@
+[submodule "gamechanger-data"]
+    path = gamechanger-data
+    url = ../gamechanger-data.git
+    branch = dev
