@@ -8,7 +8,11 @@ Over 15 thousand documents govern how the Departmentof Defense (DoD) operates. T
 
 - [gamechanger](https://github.com/dod-advana/GAMECHANGER) (here)
 - [gamechanger-data](https://github.com/dod-advana/gamechanger-data)
-- gamechanger-webapp (Coming Soon!)
+- [gamechanger-ml](https://github.com/dod-advana/gamechanger-ml)
+- gamechanger-neo4j-plugin (Coming Soon!)
+- gamechanger-crawlers (Coming Soon!)
+- gamechanger-dm-api (Coming Soon!)
+- gamechanger-web (Coming Soon!)
 
 #
 <img src="./assets/icons/Brand_Platform.png" align="right"
