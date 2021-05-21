@@ -20,15 +20,39 @@ GAMECHANGER aspires to be the Department’s trusted solution for evidence-based
 - Fusing best practices from industry, academia, and government to advance innovation and research
 - Engaging the open-source community to build generalizable and replicable technology
 
-### Repositories
+# Repositories
 
-- [gamechanger](https://github.com/dod-advana/GAMECHANGER) (here)
-- [gamechanger-data](https://github.com/dod-advana/gamechanger-data)
-- [gamechanger-ml](https://github.com/dod-advana/gamechanger-ml)
-- [gamechanger-neo4j-plugin](https://github.com/dod-advana/gamechanger-neo4j-plugin)
-- [gamechanger-web](https://github.com/dod-advana/gamechanger-web)
-- gamechanger-crawlers (Coming Soon!)
-- gamechanger-dm-api (Coming Soon!)
+<p><img src="./assets/icons/checkmarks.png"
+     alt="Checkmarks" width="100" style="vertical-align: middle;" >
+<a href="https://github.com/dod-advana/GAMECHANGER">gamechanger (here)</a>
+</p> 
+<p><img src="./assets/icons/External%20Data%20Upload.png" 
+     alt="Data Engineering" width="100" style="vertical-align: middle;">
+<a href="https://github.com/dod-advana/gamechanger-data">gamechanger-data</a>
+</p> 
+<p><img src="./assets/icons/RPA.png" 
+     alt="Developer" width="100" style="vertical-align: middle;">
+<a href="https://github.com/dod-advana/gamechanger-ml">gamechanger-ml</a>
+</p> 
+<p><img src="./assets/icons/synergy.png" 
+     alt="Neo4J Plugin" width="100" style="vertical-align: middle;">
+<a href="https://github.com/dod-advana/gamechanger-neo4j-plugin">gamechanger-neo4j-plugin</a>
+</p> 
+<p><img src="./assets/icons/Developers.png" 
+     alt="Web Application" width="100" style="vertical-align: middle;">
+<a href="https://github.com/dod-advana/gamechanger-web">gamechanger-web</a>
+</p> 
+<p><img src="./assets/icons/chatbot.png" 
+     alt="Crawler" width="100" style="vertical-align: middle;">
+gamechanger-crawlers (Coming Soon!)
+</p> 
+<p><img src="./assets/icons/platform.png" 
+     alt="Web Application" width="100" style="vertical-align: middle;">
+gamechanger-dm-api (Coming Soon!)
+</p> 
+
+
+# 
 
 ### Submodule Structure
 
