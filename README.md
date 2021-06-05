@@ -44,7 +44,7 @@ GAMECHANGER aspires to be the Department’s trusted solution for evidence-based
 </p> 
 <p><img src="./assets/icons/chatbot.png" 
      alt="Crawler" width="100" style="vertical-align: middle;">
-gamechanger-crawlers (Coming Soon!)
+<a href="https://github.com/dod-advana/gamechanger-crawlers">gamechanger-crawler</a>
 </p> 
 <p><img src="./assets/icons/platform.png" 
      alt="Web Application" width="100" style="vertical-align: middle;">
