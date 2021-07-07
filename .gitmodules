@@ -1,8 +1,0 @@
-[submodule "gamechanger-data"]
-    path = gamechanger-data
-    url = ../gamechanger-data.git
-    branch = dev
-[submodule "gamechanger-web"]
-	path = gamechanger-web
-	url = https://github.com/dod-advana/gamechanger-web
-	branch = dev
