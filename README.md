@@ -54,19 +54,5 @@ gamechanger-dm-api (Coming Soon!)
 
 # 
 
-### Submodule Structure
-
-```
-gamechanger
-├── gamechanger-data
-│   └── gamechanger-ml
-└── gamechanger-web
-```
-### How to get started with Submodules
-To download all repositories and their dependencies clone this repository with all its submodules.
-
-`git clone --recurse-submodules https://github.com/dod-advana/gamechanger.git`
-
-For further references on using [submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules).
 ## License & Contributions
 See LICENSE.md (including licensing intent - INTENT.md) and CONTRIBUTING.md
