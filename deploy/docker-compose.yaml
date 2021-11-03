@@ -8,6 +8,7 @@ services:
       args:
         APP_UID: 1000
         APP_GID: 1000
+        NPM_AUTH_TOKEN: "${NPM_AUTH_TOKEN}"
     user: "1000:1000"
     image: "gc-web:latest"
     ports:
