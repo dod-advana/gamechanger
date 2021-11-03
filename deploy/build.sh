@@ -9,10 +9,12 @@ DEPLOY_CONF="${SCRIPT_DIR}/deploy.conf.sh"
 source "$DEPLOY_CONF"
 
 function main() (
-  docker-compose \
-    --project-directory "${REPO_DIR}" \
-    --file "${REPO_DIR}/deploy/docker-compose.yaml" \
-    build
+  env \
+    NPM_AUTH_TOKEN="${NPM_AUTH_TOKEN}" \
+      docker-compose \
+        --project-directory "${REPO_DIR}" \
+        --file "${REPO_DIR}/deploy/docker-compose.yaml" \
+        build
 )
 
 main
