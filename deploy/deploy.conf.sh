@@ -1,6 +1,11 @@
 #!/usr/bin/env/bash
+_script_dir="$(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+_repo_dir="$(cd -- "${_script_dir}/../" &> /dev/null && pwd)"
 
-DEPLOY_SRC_DIR="${REPO_DIR}/deploy/src"
+DEPLOY_SRC_DIR="${_repo_dir}/deploy/src"
+
+unset _script_dir
+unset _repo_dir
 
 declare -a REPO_NAMES=(\
   gamechanger-web \
