@@ -26,6 +26,8 @@ services:
       - "true"
     command: []
     image: "gc-data-pipelines:latest"
+    volumes:
+      - "data-pipelines-tmp:/opt/app-root/tmp"
     networks:
       - app-net
 
@@ -43,6 +45,8 @@ services:
     ports:
       - "5000:5000"
     image: "gc-data-pipelines:latest"
+    volumes:
+      - "gamechanger-ml-data:/opt/app-root/src/gamechangerml/models"
     networks:
       - app-net
 
@@ -137,6 +141,8 @@ volumes:
   es-data:
   redis-data:
   redis-etc:
+  gamechanger-ml-data:
+  data-pipelines-tmp:
 
 networks:
   app-net:
