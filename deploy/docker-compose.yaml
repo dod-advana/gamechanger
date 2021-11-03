@@ -23,7 +23,7 @@ services:
     user: root
     entrypoint:
       - "true"
-    command: {}
+    command: []
     image: "gc-data-pipelines:latest"
     networks:
       - app-net
