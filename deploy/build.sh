@@ -10,7 +10,7 @@ source "$DEPLOY_CONF"
 
 function main() (
   docker-compose \
-    --project-directory "${REPO_DIR}/deploy" \
+    --project-directory "${REPO_DIR}" \
     --file "${REPO_DIR}/deploy/docker-compose.yaml" \
     build
 )
