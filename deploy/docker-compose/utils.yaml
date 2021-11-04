@@ -6,7 +6,7 @@ services:
       - "-c"
     command:
       - |
-        until curl -fs --connect-timeout 5 minio:9000/minio/health/live; do
+        until curl -fs --connect-timeout 5 s3-server:9000/minio/health/live; do
           >&2 echo "S3 Server is unavailable - sleeping"
           sleep 5
         done
