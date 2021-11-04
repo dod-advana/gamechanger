@@ -4,7 +4,7 @@ _repo_dir="$(cd -- "${_script_dir}/../" &> /dev/null && pwd)"
 
 DEPLOY_BUILD_DIR="${_repo_dir}/deploy/build"
 DEPLOY_VAR_DIR="${_repo_dir}/deploy/var"
-DEPLOY_COMPOSE_DIR="${_repo_dir}/docker-compose"
+DEPLOY_COMPOSE_DIR="${_repo_dir}/deploy/docker-compose"
 
 unset _script_dir
 unset _repo_dir
