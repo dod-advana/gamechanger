@@ -26,7 +26,7 @@ function main() {
   
   # wait until remaining services are up
   compose_wrapper run -- _web_wait_until_ready
-  compose_wrapper run -- _gamechanger_ml_wait_until_ready
+  compose_wrapper run -- _ml_api_wait_until_ready
 }
 
 main
