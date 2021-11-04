@@ -33,6 +33,7 @@ services:
       - |
         /opt/app-root/src/generateCombinedEnv.sh > ./.env
         
+        mkdir -p /opt/app-root/src/secrets/
         openssl genrsa -out /opt/app-root/src/secrets/tls_key.key 4096
         openssl req -x509 -sha256 -days 3650 \
           -key /opt/app-root/src/secrets/tls_key.key \
