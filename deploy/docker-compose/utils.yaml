@@ -23,7 +23,7 @@ services:
       - "-c"
     command:
       - |
-        until redis-cli -h redis ping; do
+        until redis-cli -h redis ping &>/dev/null ; do
           >&2 echo "Redis is unavailable - sleeping"
           sleep 5
         done
@@ -39,7 +39,7 @@ services:
       - "-c"
     command:
       - |
-        until curl -fs --connect-timeout 5 web:8990/; do
+        until curl -fs --connect-timeout 5 web:8990/ &>/dev/null ; do
           >&2 echo "Web frontend/backend is unavailable - sleeping"
           sleep 5
         done
@@ -55,7 +55,7 @@ services:
       - "-c"
     command:
       - |
-        until curl -fs --connect-timeout 10 ml-api:5000/; do
+        until curl -fs --connect-timeout 10 ml-api:5000/ &>/dev/null ; do
           >&2 echo "ML API is unavailable - sleeping"
           sleep 10
         done
