@@ -1,6 +1,7 @@
 services:
   web:
     image: "${GC_WEB_IMAGE}"
+    container_name: "${COMPOSE_PROJECT_NAME:-gc}-web"
     user: "1000:1000"
     depends_on:
       - redis
@@ -13,6 +14,7 @@ services:
 
   gamechanger-ml:
     image: "${GC_ML_API_IMAGE}"
+    container_name: "${COMPOSE_PROJECT_NAME:-gc}-ml-api"
     user: "1001:1001"
     depends_on:
       - redis
@@ -28,6 +30,7 @@ services:
 
   redis:
     image: "${GC_REDIS_IMAGE}"
+    container_name: "${COMPOSE_PROJECT_NAME:-gc}-redis"
     user: redis
     ports:
       - "6379:6379"
@@ -114,5 +117,6 @@ services:
 
   data-pipelines:
     image: "${GC_DATA_PIPELINES_IMAGE}"
+    container_name: "${COMPOSE_PROJECT_NAME:-gc}-data-pipelines"
     command:
       - "true"
