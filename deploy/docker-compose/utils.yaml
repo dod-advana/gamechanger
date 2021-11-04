@@ -41,7 +41,7 @@ services:
       - "-c"
     command:
       - |
-        PGPASSWORD="$$POSTGRES_PASSWORD" psql -h postgres -d postgres -U "postgres" -c '\q'; do
+        until env PGPASSWORD="$$POSTGRES_PASSWORD" psql -h postgres -d postgres -U "postgres" -c '\q'; do
           >&2 echo "Postgres is unavailable - sleeping"
           sleep 5
         done
