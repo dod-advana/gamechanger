@@ -10,9 +10,9 @@ source "$DEPLOY_CONF"
 
 function main() (
   # shut down everything
-  compose_wrapper down
+  compose_wrapper down "$@"
 
   >&2 echo "[INFO] Shutdown finished."
 )
 
-main
+main "$@"
