@@ -20,11 +20,13 @@ function main() {
   # config base services
   compose_wrapper run -- _postgres_config_step_1_setup_web_schema
   compose_wrapper run -- _postgres_config_step_2_setup_data_schema
-
+  
   # start up remaining services
   compose_wrapper up -d -- web gamechanger-ml web
-
-  >&2 echo "[INFO] Startup finished, web & ml api might take a bit to start up."
+  
+  # wait until remaining services are up
+  compose_wrapper run -- _web_wait_until_ready
+  compose_wrapper run -- _gamechanger_ml_wait_until_ready
 }
 
 main

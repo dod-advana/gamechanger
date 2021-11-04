@@ -30,6 +30,38 @@ services:
     networks:
       - app-net
 
+  _web_wait_until_ready:
+    image: "${GC_WEB_IMAGE}"
+    depends_on:
+      - redis
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+    command:
+      - |
+        until curl -fs --connect-timeout 5 web:8990/; do
+          >&2 echo "Web frontend/backend is unavailable - sleeping"
+          sleep 5
+        done
+    networks:
+      - app-net
+
+  _ml_api_wait_until_ready:
+    image: "${GC_ML_API_IMAGE}"
+    depends_on:
+      - redis
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+    command:
+      - |
+        until curl -fs --connect-timeout 10 ml-api:5000/; do
+          >&2 echo "ML API is unavailable - sleeping"
+          sleep 10
+        done
+    networks:
+      - app-net
+
   _postgres_wait_until_ready:
     image: "${GC_POSTGRES_IMAGE}"
     depends_on:

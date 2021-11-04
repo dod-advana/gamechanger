@@ -34,7 +34,7 @@ services:
         /opt/app-root/src/generateCombinedEnv.sh > ./.env
         node index.js
 
-  gamechanger-ml:
+  ml-api:
     image: "${GC_ML_API_IMAGE}"
     container_name: "${COMPOSE_PROJECT_NAME:-gc}-ml-api"
     user: "1001:1001"
@@ -46,7 +46,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - "gamechanger-ml-data:/opt/app-root/src/gamechangerml/models"
+      - "ml-api-data:/opt/app-root/src/gamechangerml/models"
     networks:
       - app-net
 

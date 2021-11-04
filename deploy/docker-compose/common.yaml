@@ -7,7 +7,7 @@ volumes:
   es-data:
   redis-data:
   redis-etc:
-  gamechanger-ml-data:
+  ml-api-data:
   data-pipelines-tmp:
 
 networks:
