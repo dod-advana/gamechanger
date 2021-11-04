@@ -22,7 +22,7 @@ function main() {
   compose_wrapper run -- _postgres_config_step_2_setup_data_schema
   
   # start up remaining services
-  compose_wrapper up -d -- web gamechanger-ml web
+  compose_wrapper up -d -- web ml-api web
   
   # wait until remaining services are up
   compose_wrapper run -- _web_wait_until_ready
