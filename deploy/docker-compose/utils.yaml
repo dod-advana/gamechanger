@@ -1,0 +1,88 @@
+services:
+  _s3_server_wait_until_ready:
+    image: "${GC_S3_CLIENT_IMAGE}"
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+    command:
+      - |
+        until curl -fs --connect-timeout 5 minio:9000/minio/health/live; do
+          >&2 echo "S3 Server is unavailable - sleeping"
+          sleep 5
+        done
+    networks:
+      - app-net
+
+  _redis_wait_until_ready:
+    image: "${GC_REDIS_IMAGE}"
+    user: redis
+    depends_on:
+      - redis
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+    command:
+      - |
+        until redis-cli -h redis ping; do
+          >&2 echo "Redis is unavailable - sleeping"
+          sleep 5
+        done
+    networks:
+      - app-net
+
+  _postgres_wait_until_ready:
+    image: "${GC_POSTGRES_IMAGE}"
+    depends_on:
+      - postgres
+    environment:
+      POSTGRES_PASSWORD: password
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+    command:
+      - |
+        PGPASSWORD="$$POSTGRES_PASSWORD" psql -h postgres -d postgres -U "postgres" -c '\q'; do
+          >&2 echo "Postgres is unavailable - sleeping"
+          sleep 5
+        done
+    networks:
+      - app-net
+
+  _postgres_config_step_2_setup_data_schema:
+    image: "${GC_DATA_PIPELINES_IMAGE}"
+    command:
+      - "/bin/bash"
+      - "-c"
+      - |
+        python -m configuration init --app-config docker --elasticsearch-config local docker
+        python -m configuration configure-backend
+    networks:
+      - app-net
+
+  _postgres_config_step_1_setup_web_schema:
+    image: "${GC_WEB_IMAGE}"
+    environment:
+      POSTGRES_HOST_GAME_CHANGER: postgres
+      POSTGRES_HOST_GC_ORCHESTRATION: postgres
+      POSTGRES_DB_GAME_CHANGER: postgres
+      POSTGRES_DB_GC_ORCHESTRATION: postgres
+      POSTGRES_PASSWORD_GAME_CHANGER: password
+      POSTGRES_PASSWORD_GC_ORCHESTRATION: password
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+    command:
+      - |
+        _urlenc_pass=$$(2>/dev/null node -e "console.log(encodeURIComponent(process.env.POSTGRES_PASSWORD_GAME_CHANGER))")
+        sequelize db:migrate \
+          --options-path ./.sequelize-game_changer \
+          --env game_changer \
+          --url "postgresql://$${POSTGRES_USER_GAME_CHANGER}:$${_urlenc_pass}@$${POSTGRES_HOST_GAME_CHANGER}/$${POSTGRES_DB_GAME_CHANGER}"
+
+        _urlenc_pass=$$(2>/dev/null node -e "console.log(encodeURIComponent(process.env.POSTGRES_PASSWORD_GC_ORCHESTRATION))")
+        sequelize db:migrate \
+          --options-path ./.sequelize-gc-orchestration \
+          --env gc_orchestration \
+          --url "postgresql://$${POSTGRES_USER_GC_ORCHESTRATION}:$${_urlenc_pass}@$${POSTGRES_HOST_GC_ORCHESTRATION}/$${POSTGRES_DB_GC_ORCHESTRATION}"
+    networks:
+      - app-net

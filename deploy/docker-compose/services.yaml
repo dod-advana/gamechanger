@@ -1,0 +1,118 @@
+services:
+  web:
+    image: "${GC_WEB_IMAGE}"
+    user: "1000:1000"
+    depends_on:
+      - redis
+      - postgres
+    ports:
+      - "8080:8990"
+      - "8443:8443"
+    networks:
+      - app-net
+
+  gamechanger-ml:
+    image: "${GC_ML_API_IMAGE}"
+    user: "1001:1001"
+    depends_on:
+      - redis
+    environment:
+      ENV_TYPE: DEVLOCAL
+      DOWNLOAD_DEP: "false"
+    ports:
+      - "5000:5000"
+    volumes:
+      - "gamechanger-ml-data:/opt/app-root/src/gamechangerml/models"
+    networks:
+      - app-net
+
+  redis:
+    image: "${GC_REDIS_IMAGE}"
+    user: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - "redis-etc:/usr/local/etc"
+      - "redis-data:/data"
+    networks:
+      - app-net
+
+  neo4j:
+    image: "${GC_NEO4J_IMAGE}"
+    build: 
+      context: "./deploy/build/gamechanger-neo4j-plugin/"
+      dockerfile: "./docker/debian.Dockerfile"
+    container_name: "${COMPOSE_PROJECT_NAME:-gc}-neo4j"
+    environment:
+      NEO4J_AUTH: "neo4j/password"
+    ports:
+      - "7687:7687"
+      - "7474:7474"
+    volumes:
+      - "neo4j-data:/neo4j/data"
+    networks:
+      - app-net
+
+  elasticsearch:
+    image: "${GC_ELASTICSEARCH_IMAGE}"
+    container_name: "${COMPOSE_PROJECT_NAME:-gc}-elasticsearch"
+    user: elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - "es-data:/usr/share/elasticsearch/data"
+    environment:
+      - "discovery.type=single-node"
+    networks:
+      - app-net
+
+  kibana:
+    image: "${GC_KIBANA_IMAGE}"
+    container_name: "${COMPOSE_PROJECT_NAME:-gc}-kibana"
+    user: kibana
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5601:5601"
+    networks:
+      - app-net
+
+  s3-server:
+    image: "${GC_S3_SERVER_IMAGE}"
+    container_name: "${COMPOSE_PROJECT_NAME:-gc}-s3-server"
+    user: root
+    ports:
+      - "9000:9000"
+    volumes:
+      - "s3-data:/s3-data"
+    environment: 
+      - "MINIO_ACCESS_KEY=dev-access-key"
+      - "MINIO_SECRET_KEY=dev-secret-key"
+      - "MINIO_REGION_NAME=us-east-1"
+    command:
+      - server
+      - /s3-data
+    networks:
+      - app-net
+
+  postgres:
+    image: "${GC_POSTGRES_IMAGE}"
+    container_name: "${COMPOSE_PROJECT_NAME:-gc}-postgres"
+    user: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - "pg-data:/pg-data"
+    environment: 
+      - "POSTGRES_USER=postgres"
+      - "POSTGRES_PASSWORD=password"
+      - "POSTGRES_DB=postgres"
+      - "PGDATA=/pg-data"
+    networks:
+      - app-net
+
+  data-pipelines:
+    image: "${GC_DATA_PIPELINES_IMAGE}"
+    command:
+      - "true"
