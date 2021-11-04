@@ -2,7 +2,7 @@
 _script_dir="$(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 _repo_dir="$(cd -- "${_script_dir}/../" &> /dev/null && pwd)"
 
-DEPLOY_SRC_DIR="${_repo_dir}/deploy/src"
+DEPLOY_BUILD_DIR="${_repo_dir}/deploy/build"
 DEPLOY_VAR_DIR="${_repo_dir}/deploy/var"
 
 unset _script_dir
@@ -33,11 +33,11 @@ declare -A REPO_TAG_MAP=(\
 )
 
 declare -A REPO_DIR_MAP=(\
-  [gamechanger-web]="${DEPLOY_SRC_DIR}/gamechanger-web" \
-  [gamechanger-data]="${DEPLOY_SRC_DIR}/gamechanger-data" \
-  [gamechanger-ml]="${DEPLOY_SRC_DIR}/gamechanger-ml" \
-  [gamechanger-neo4j-plugin]="${DEPLOY_SRC_DIR}/gamechanger-neo4j-plugin" \
-  [gamechanger-crawlers]="${DEPLOY_SRC_DIR}/gamechanger-crawlers" \
+  [gamechanger-web]="${DEPLOY_BUILD_DIR}/gamechanger-web" \
+  [gamechanger-data]="${DEPLOY_BUILD_DIR}/gamechanger-data" \
+  [gamechanger-ml]="${DEPLOY_BUILD_DIR}/gamechanger-ml" \
+  [gamechanger-neo4j-plugin]="${DEPLOY_BUILD_DIR}/gamechanger-neo4j-plugin" \
+  [gamechanger-crawlers]="${DEPLOY_BUILD_DIR}/gamechanger-crawlers" \
 )
 
 declare -A SERVICE_VAR_DIR_MAP=(\

@@ -1,85 +1,208 @@
 version: '3.5'
 
+x-common-settings: &common-settings
+  networks:
+    - app-net
+
+x-image-names:
+  gamechanger-web: &gamechanger-web-image "gc-web:latest"
+  data-pipelines: &data-pipelines-image "gc-data-pipelines:latest"
+  neo4j: &neo4j-image "gc-neo4j:latest"
+  postgres: &postgres-image "postgres:13.4-alpine"
+  redis: &redis-image "redis:5.0.14"
+  web: &web-image "gc-web:latest"
+  kibana: &kibana-image "kibana:7.10.1"
+  s3-server: &s3-server-image "minio/minio:RELEASE.2021-10-23T03-28-24Z"
+  s3-client: &s3-client-image "minio/mc:RELEASE.2021-10-07T04-19-58Z"
+  elasticsearch: &elasticsearch-image "elasticsearch:7.10.1"
+  gamechanger-ml: &gamechanger-ml-image "gc-ml:latest"
+
 services:
-  web:
+
+#####
+## ## Lifecycle Pseudo-Services (building/configuring things)
+#####
+
+  _build_web_image:
+    image: *web-image
     build:
-      context: "./deploy/src/gamechanger-web/"
+      context: "./deploy/build/gamechanger-web/"
       dockerfile: "./Dockerfile.prod"
       args:
         APP_UID: 1000
         APP_GID: 1000
-        NPM_AUTH_TOKEN: "${NPM_AUTH_TOKEN}"
-    user: "1000:1000"
-    image: "gc-web:latest"
-    ports:
-      - "8990:8990"
-      - "8443:8443"
-    networks:
-      - app-net
-
-  data-pipelines:
-    build:
-      context: "./deploy/src/gamechanger-data/"
-      dockerfile: "./dev_tools/docker/k8s/rhel8.Dockerfile"
-    user: root
+        NPM_AUTH_TOKEN: "${NPM_AUTH_TOKEN?}"
     entrypoint:
-      - "true"
+      - echo
+      - "[INFO] Web image build completed."
     command: []
-    image: "gc-data-pipelines:latest"
-    volumes:
-      - "data-pipelines-tmp:/opt/app-root/tmp"
-    networks:
-      - app-net
+
+  _build_data_pipelines_image:
+    image: *data-pipelines-image
+    build:
+      context: "./deploy/build/gamechanger-data/"
+      dockerfile: "./dev_tools/docker/k8s/rhel8.Dockerfile"
+    entrypoint:
+      - echo
+      - "[INFO] Data Pipelines image build completed."
+    command: []
+
+  _s3_server_wait_until_ready:
+    <<: *common-settings
+    image: *s3-client-image
+    depends_on:
+      - s3-server
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+    command:
+      - |
+        until curl -fs --connect-timeout 5 minio:9000/minio/health/live; do
+          >&2 echo "S3 Server is unavailable - sleeping"
+          sleep 5
+        done
+
+  _redis_wait_until_ready:
+    <<: *common-settings
+    image: *redis-image
+    user: redis
+    depends_on:
+      - redis
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+    command:
+      - |
+        until redis-cli -h redis ping; do
+          >&2 echo "Redis is unavailable - sleeping"
+          sleep 5
+        done
+
+  _postgres_wait_until_ready:
+    <<: *common-settings
+    image: *postgres-image
+    depends_on:
+      - postgres
+    environment:
+      POSTGRES_PASSWORD: password
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+    command:
+      - |
+        PGPASSWORD="$$POSTGRES_PASSWORD" psql -h postgres -d postgres -U "postgres" -c '\q'; do
+          >&2 echo "Postgres is unavailable - sleeping"
+          sleep 5
+        done
+
+  _postgres_config_step_2_setup_data_schema:
+    <<: *common-settings
+    image: *data-pipelines-image
+    depends_on:
+      - _build_data_pipelines_image
+      - _postgres_config_step_1_setup_web_schema
+      - _postgres_wait_until_ready
+    command:
+      - "/bin/bash"
+      - "-c"
+      - |
+        python -m configuration init --app-config docker --elasticsearch-config local docker
+        python -m configuration configure-backend
+
+  _postgres_config_step_1_setup_web_schema:
+    <<: *common-settings
+    image: *postgres-image
+    depends_on:
+      - _postgres_wait_until_ready
+    environment:
+      POSTGRES_HOST_GAME_CHANGER: postgres
+      POSTGRES_HOST_GC_ORCHESTRATION: postgres
+      POSTGRES_DB_GAME_CHANGER: postgres
+      POSTGRES_DB_GC_ORCHESTRATION: postgres
+      POSTGRES_PASSWORD_GAME_CHANGER: password
+      POSTGRES_PASSWORD_GC_ORCHESTRATION: password
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+    command:
+      - |
+        _urlenc_pass=$$(2>/dev/null node -e "console.log(encodeURIComponent(process.env.POSTGRES_PASSWORD_GAME_CHANGER))")
+        sequelize db:migrate \
+          --options-path ./.sequelize-game_changer \
+          --env game_changer \
+          --url "postgresql://$${POSTGRES_USER_GAME_CHANGER}:$${_urlenc_pass}@$${POSTGRES_HOST_GAME_CHANGER}/$${POSTGRES_DB_GAME_CHANGER}"
+
+        _urlenc_pass=$$(2>/dev/null node -e "console.log(encodeURIComponent(process.env.POSTGRES_PASSWORD_GC_ORCHESTRATION))")
+        sequelize db:migrate \
+          --options-path ./.sequelize-gc-orchestration \
+          --env gc_orchestration \
+          --url "postgresql://$${POSTGRES_USER_GC_ORCHESTRATION}:$${_urlenc_pass}@$${POSTGRES_HOST_GC_ORCHESTRATION}/$${POSTGRES_DB_GC_ORCHESTRATION}"
+
+#####
+## ## Actual Services (the runtime stack)
+#####
+
+  web:
+    <<: *common-settings
+    image: *web-image
+    user: "1000:1000"
+    depends_on:
+      - _redis_wait_until_ready
+      - _postgres_config_step_2_setup_data_schema
+      - _build_web_image
+    ports:
+      - "8080:8990"
+      - "8443:8443"
 
   gamechanger-ml:
+    <<: *common-settings
+    image: *gamechanger-ml-image
     build:
-      context: "./deploy/src/gamechanger-ml/"
+      context: "./deploy/build/gamechanger-ml/"
       dockerfile: "./gamechangerml/api/fastapi/rhel8.mlapp.Dockerfile"
       args:
         APP_UID: 1001
         APP_GID: 1001
     user: "1001:1001"
+    depends_on:
+      - _redis_wait_until_ready
     environment:
       ENV_TYPE: DEVLOCAL
       DOWNLOAD_DEP: "false"
     ports:
       - "5000:5000"
-    image: "gc-data-pipelines:latest"
     volumes:
       - "gamechanger-ml-data:/opt/app-root/src/gamechangerml/models"
-    networks:
-      - app-net
 
   redis:
-    image: redis:5.0.14
+    <<: *common-settings
+    image: *redis-image
     user: redis
     ports:
       - "6379:6379"
     volumes:
       - "redis-etc:/usr/local/etc"
       - "redis-data:/data"
-    networks:
-      - app-net
-
+  
   neo4j:
+    <<: *common-settings
+    image: *neo4j-image
     build: 
-      context: "./deploy/src/gamechanger-neo4j-plugin/"
+      context: "./deploy/build/gamechanger-neo4j-plugin/"
       dockerfile: "./docker/debian.Dockerfile"
     container_name: "${COMPOSE_PROJECT_NAME:-gc}-neo4j"
     environment:
       NEO4J_AUTH: "neo4j/password"
-    image: "gc-neo4j:latest"
     ports:
       - "7687:7687"
       - "7474:7474"
     volumes:
       - "neo4j-data:/neo4j/data"
-    networks:
-      - app-net
 
   elasticsearch:
+    <<: *common-settings
+    image: *elasticsearch-image
     container_name: "${COMPOSE_PROJECT_NAME:-gc}-elasticsearch"
-    image: elasticsearch:7.10.1
     user: elasticsearch
     ports:
       - 9200:9200
@@ -88,21 +211,21 @@ services:
       - "es-data:/usr/share/elasticsearch/data"
     environment:
       - "discovery.type=single-node"
-    networks:
-      - app-net
 
   kibana:
+    <<: *common-settings
+    image: *kibana-image
     container_name: "${COMPOSE_PROJECT_NAME:-gc}-kibana"
-    image: kibana:7.10.1
     user: kibana
+    depends_on:
+      - elasticsearch
     ports:
       - 5601:5601
-    networks:
-      - app-net
 
   s3-server:
+    <<: *common-settings
+    image: *s3-server-image
     container_name: "${COMPOSE_PROJECT_NAME:-gc}-s3-server"
-    image: "minio/minio:RELEASE.2021-10-23T03-28-24Z"
     user: root
     ports:
       - "9000:9000"
@@ -115,12 +238,11 @@ services:
     command:
       - server
       - /s3-data
-    networks:
-      - app-net
 
   postgres:
+    <<: *common-settings
+    image: *postgres-image
     container_name: "${COMPOSE_PROJECT_NAME:-gc}-postgres"
-    image: "postgres:13.4-alpine"
     user: postgres
     ports:
       - "5432:5432"
@@ -131,8 +253,6 @@ services:
       - "POSTGRES_PASSWORD=password"
       - "POSTGRES_DB=postgres"
       - "PGDATA=/pg-data"
-    networks:
-      - app-net
 
 volumes:
   s3-data:

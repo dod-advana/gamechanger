@@ -34,7 +34,7 @@ function setup_repo() (
 function main() (
   local repo
 
-  [[ -d "$DEPLOY_SRC_DIR" ]] || mkdir -p "$DEPLOY_SRC_DIR"
+  [[ -d "$DEPLOY_BUILD_DIR" ]] || mkdir -p "$DEPLOY_BUILD_DIR"
 
   echo ">>>>>>>> PULL MODE IS $PULL_MODE"
 

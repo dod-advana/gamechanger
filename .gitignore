@@ -1,3 +1,4 @@
-/deploy/src/
+/deploy/build/
+/deploy/config/
 /deploy/var/
 /deploy/.env
