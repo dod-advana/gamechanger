@@ -56,6 +56,7 @@ services:
     environment:
       ENV_TYPE: DEVLOCAL
       DOWNLOAD_DEP: "false"
+      REDIS_HOST: redis
     ports:
       - "5000:5000"
     volumes:
