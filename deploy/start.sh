@@ -20,6 +20,7 @@ function main() {
   # config base services
   compose_wrapper run -- _postgres_config_step_1_setup_web_schema
   compose_wrapper run -- _postgres_config_step_2_setup_data_schema
+  compose_wrapper run -- _postgres_config_step_3_setup_um_schema
   
   # start up remaining services
   compose_wrapper up -d -- web ml-api web

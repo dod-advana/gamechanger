@@ -67,16 +67,39 @@ services:
     depends_on:
       - postgres
     environment:
-      POSTGRES_PASSWORD: password
+      PGPASSWORD: password
+      PGHOST: postgres
+      PGUSER: postgres
+      PGDATABASE: postgres
     entrypoint:
       - "/bin/bash"
       - "-c"
     command:
       - |
-        until env PGPASSWORD="$$POSTGRES_PASSWORD" psql -h postgres -d postgres -U "postgres" -c '\q'; do
+        until psql -c '\q'; do
           >&2 echo "Postgres is unavailable - sleeping"
           sleep 5
         done
+    networks:
+      - app-net
+
+  _postgres_config_step_3_setup_um_schema:
+    image: "${GC_POSTGRES_IMAGE}"
+    depends_on:
+      - postgres
+    environment:
+      PGPASSWORD: password
+      PGHOST: postgres
+      PGUSER: postgres
+      PGDATABASE: postgres
+    entrypoint:
+      - "/bin/bash"
+      - "-ec"
+    volumes:
+      - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/sql/:Z"
+    command:
+      - |
+        psql -f /tmp/sql/create_um_tables.sql
     networks:
       - app-net
 
