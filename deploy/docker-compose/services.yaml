@@ -28,7 +28,7 @@ services:
       - app-net
     entrypoint:
       - "/bin/bash"
-      - "-c"
+      - "-ec"
     command:
       - |
         /opt/app-root/src/generateCombinedEnv.sh > ./.env

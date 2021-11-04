@@ -84,7 +84,7 @@ services:
     image: "${GC_DATA_PIPELINES_IMAGE}"
     command:
       - "/bin/bash"
-      - "-c"
+      - "-ec"
       - |
         python -m configuration init --app-config docker --elasticsearch-config local docker
         python -m configuration configure-backend
@@ -104,7 +104,7 @@ services:
       POSTGRES_PASSWORD_GC_ORCHESTRATION: password
     entrypoint:
       - "/bin/bash"
-      - "-c"
+      - "-ec"
     command:
       - |
         _urlenc_pass=$$(2>/dev/null node -e "console.log(encodeURIComponent(process.env.POSTGRES_PASSWORD_GAME_CHANGER))")
