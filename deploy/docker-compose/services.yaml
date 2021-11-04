@@ -99,7 +99,7 @@ services:
   postgres:
     image: "${GC_POSTGRES_IMAGE}"
     container_name: "${COMPOSE_PROJECT_NAME:-gc}-postgres"
-    user: postgres
+    user: root
     ports:
       - "5432:5432"
     volumes:
