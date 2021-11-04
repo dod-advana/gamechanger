@@ -41,7 +41,7 @@ services:
         
         cp /opt/app-root/src/secrets/tls_cert.cer /opt/app-root/src/secrets/ca_bundle.pem
         
-        export SAML_CERT="$(openssl rsa -in /opt/app-root/src/secrets/tls_key.key -pubout)"
+        export SAML_CERT="$$(openssl rsa -in /opt/app-root/src/secrets/tls_key.key -pubout)"
 
         /opt/app-root/src/generateCombinedEnv.sh > ./.env
 
