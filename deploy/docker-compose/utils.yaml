@@ -94,7 +94,6 @@ services:
       - app-net
 
   _elasticsearch_wait_until_ready:
-    elasticsearch:
     image: "${GC_ELASTICSEARCH_IMAGE}"
     container_name: "${COMPOSE_PROJECT_NAME:-gc}-elasticsearch"
     entrypoint:
