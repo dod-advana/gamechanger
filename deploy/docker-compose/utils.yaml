@@ -3,6 +3,8 @@ services:
     image: "${GC_S3_CLIENT_IMAGE}"
     entrypoint:
       - "/bin/bash"
+      - "-o"
+      - "nounset"
       - "-c"
     command:
       - |
@@ -20,6 +22,8 @@ services:
       - redis
     entrypoint:
       - "/bin/bash"
+      - "-o"
+      - "nounset"
       - "-c"
     command:
       - |
@@ -36,6 +40,8 @@ services:
       - redis
     entrypoint:
       - "/bin/bash"
+      - "-o"
+      - "nounset"
       - "-c"
     command:
       - |
@@ -52,6 +58,8 @@ services:
       - redis
     entrypoint:
       - "/bin/bash"
+      - "-o"
+      - "nounset"
       - "-c"
     command:
       - |
@@ -73,6 +81,8 @@ services:
       PGDATABASE: postgres
     entrypoint:
       - "/bin/bash"
+      - "-o"
+      - "nounset"
       - "-c"
     command:
       - |
@@ -80,6 +90,52 @@ services:
           >&2 echo "Postgres is unavailable - sleeping"
           sleep 5
         done
+    networks:
+      - app-net
+
+  _elasticsearch_wait_until_ready:
+    elasticsearch:
+    image: "${GC_ELASTICSEARCH_IMAGE}"
+    container_name: "${COMPOSE_PROJECT_NAME:-gc}-elasticsearch"
+    entrypoint:
+      - "/bin/bash"
+      - "-o"
+      - "nounset"
+      - "-c"
+    command:
+      - |
+        until curl -fs --connect-timeout 10 elasticsearch:9200/ &>/dev/null ; do
+          >&2 echo "ElasticSearch is unavailable - sleeping"
+          sleep 10
+        done
+    networks:
+      - app-net
+
+  _postgres_config_step_4_seed_app_tables:
+    image: "${GC_POSTGRES_IMAGE}"
+    depends_on:
+      - postgres
+    environment:
+      PGPASSWORD: password
+      PGHOST: postgres
+      PGUSER: postgres
+      PGDATABASE: postgres
+    entrypoint:
+      - "/bin/bash"
+      - "-o"
+      - "pipefail"
+      - "-o"
+      - "errexit"
+      - "-o"
+      - "nounset"
+      - "-c"
+    volumes:
+      - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/sql/:Z"
+    command:
+      - |
+        psql -f /tmp/sql/create_clones.sql
+        psql -f /tmp/sql/pop_mini_RE.sql
+        psql -f /tmp/sql/create_admins.sql
     networks:
       - app-net
 
@@ -94,7 +150,13 @@ services:
       PGDATABASE: postgres
     entrypoint:
       - "/bin/bash"
-      - "-ec"
+      - "-o"
+      - "pipefail"
+      - "-o"
+      - "errexit"
+      - "-o"
+      - "nounset"
+      - "-c"
     volumes:
       - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/sql/:Z"
     command:
@@ -107,7 +169,7 @@ services:
     image: "${GC_DATA_PIPELINES_IMAGE}"
     command:
       - "/bin/bash"
-      - "-ec"
+      - "-uec"
       - |
         python -m configuration init --app-config docker --elasticsearch-config local docker
         python -m configuration configure-backend
@@ -127,7 +189,13 @@ services:
       POSTGRES_PASSWORD_GC_ORCHESTRATION: password
     entrypoint:
       - "/bin/bash"
-      - "-ec"
+      - "-o"
+      - "pipefail"
+      - "-o"
+      - "errexit"
+      - "-o"
+      - "nounset"
+      - "-c"
     command:
       - |
         _urlenc_pass=$$(2>/dev/null node -e "console.log(encodeURIComponent(process.env.POSTGRES_PASSWORD_GAME_CHANGER))")
@@ -141,5 +209,10 @@ services:
           --options-path ./.sequelize-gc-orchestration \
           --env gc_orchestration \
           --url "postgresql://$${POSTGRES_USER_GC_ORCHESTRATION}:$${_urlenc_pass}@$${POSTGRES_HOST_GC_ORCHESTRATION}/$${POSTGRES_DB_GC_ORCHESTRATION}"
+    networks:
+      - app-net
+
+  _data_pipelines_cmd:
+    image: "${GC_DATA_PIPELINES_IMAGE}"
     networks:
       - app-net

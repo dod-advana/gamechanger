@@ -16,11 +16,13 @@ function main() {
   compose_wrapper run -- _s3_server_wait_until_ready
   compose_wrapper run -- _redis_wait_until_ready
   compose_wrapper run -- _postgres_wait_until_ready
+  compose_wrapper run -- _elasticsearch_wait_until_ready
 
   # config base services
   compose_wrapper run -- _postgres_config_step_1_setup_web_schema
   compose_wrapper run -- _postgres_config_step_2_setup_data_schema
   compose_wrapper run -- _postgres_config_step_3_setup_um_schema
+  compose_wrapper run -- _postgres_config_step_4_seed_app_tables
   
   # start up remaining services
   compose_wrapper up -d -- web ml-api web
