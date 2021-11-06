@@ -17,7 +17,7 @@ services:
 
   _redis_wait_until_ready:
     image: "${GC_REDIS_IMAGE}"
-    user: redis
+    user: root
     depends_on:
       - redis
     entrypoint:
