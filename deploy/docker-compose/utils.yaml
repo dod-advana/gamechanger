@@ -167,7 +167,7 @@ services:
   _postgres_config_step_2_setup_data_schema:
     image: "${GC_DATA_PIPELINES_IMAGE}"
     volumes:
-      - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered/:rZ"
+      - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered/:Z"
     command:
       - "/bin/bash"
       - "-o"
@@ -241,14 +241,14 @@ services:
   _data_pipelines_cmd:
     image: "${GC_DATA_PIPELINES_IMAGE}"
     volumes:
-      - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered/:rZ"
+      - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered/:Z"
     networks:
       - app-net
 
   _render_data_pipeline_config:
     image: "${GC_DATA_PIPELINES_IMAGE}"
     volumes:
-      - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered/:rwZ"
+      - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered/:Z"
     entrypoint:
       - "/bin/bash"
       - "-o"
