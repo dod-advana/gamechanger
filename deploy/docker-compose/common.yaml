@@ -9,6 +9,7 @@ volumes:
   redis-etc:
   ml-api-data:
   data-pipelines-tmp:
+  data-pipelines-rendered-config:
 
 networks:
   app-net:

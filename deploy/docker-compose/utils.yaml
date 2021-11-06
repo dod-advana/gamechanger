@@ -166,11 +166,18 @@ services:
 
   _postgres_config_step_2_setup_data_schema:
     image: "${GC_DATA_PIPELINES_IMAGE}"
+    volumes:
+      - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered/:rZ"
     command:
       - "/bin/bash"
-      - "-uec"
+      - "-o"
+      - "pipefail"
+      - "-o"
+      - "errexit"
+      - "-o"
+      - "nounset"
+      - "-c"
       - |
-        python -m configuration init --app-config docker --elasticsearch-config local docker
         python -m configuration configure-backend
     networks:
       - app-net
@@ -228,11 +235,32 @@ services:
       - |
         mc config host add s3-server http://s3-server:9000 dev-access-key dev-secret-key;
         (mc ls s3-server | grep -q $$BUCKET_NAME) || mc mb "$${BUCKET_NAME}"
-
     networks:
       - app-net
   
   _data_pipelines_cmd:
     image: "${GC_DATA_PIPELINES_IMAGE}"
+    volumes:
+      - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered/:rZ"
     networks:
       - app-net
+
+  _render_data_pipeline_config:
+    image: "${GC_DATA_PIPELINES_IMAGE}"
+    volumes:
+      - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered/:rwZ"
+    entrypoint:
+      - "/bin/bash"
+      - "-o"
+      - "pipefail"
+      - "-o"
+      - "errexit"
+      - "-o"
+      - "nounset"
+      - "-c"
+    command:
+      - |
+        python -m configuration init --app-config docker --elasticsearch-config local docker
+    networks:
+      - app-net
+    

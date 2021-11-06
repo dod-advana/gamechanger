@@ -8,8 +8,8 @@ DEPLOY_CONF="${SCRIPT_DIR}/deploy.conf.sh"
 
 source "$DEPLOY_CONF"
 
-function main() (
-  bash "${REPO_DIR_MAP[gamechanger-data]}/paasJobs/jobs/local_upload.sh" "$@"
-)
+function main() {
+  compose_wrapper "$@"
+}
 
 main "$@"
