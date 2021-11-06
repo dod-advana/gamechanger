@@ -18,6 +18,10 @@ services:
       REACT_APP_SUPPORT_HREF: "https://support.local/plugins/servlet/desk/portal/5/create/113"
       REACT_APP_WIKI_HREF: "http://wiki.local"
       REACT_APP_LOGIN_ROUTE: "http://localhost:8080/login"
+      GAMECHANGER_DEMO_DEPLOYMENT: "true"
+      GAMECHANGER_DEMO_USER: "007"
+      GAMECHANGER_DISABLE_STATS_API: "true"
+  
     depends_on:
       - redis
       - postgres
