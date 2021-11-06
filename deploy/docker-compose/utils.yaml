@@ -234,7 +234,7 @@ services:
     command:
       - |
         mc config host add s3-server http://s3-server:9000 dev-access-key dev-secret-key;
-        (mc ls s3-server | grep -q $$BUCKET_NAME) || mc mb "$${BUCKET_NAME}"
+        (mc ls s3-server | grep -q $$BUCKET_NAME) || mc mb s3-server/"$${BUCKET_NAME}"
     networks:
       - app-net
   
