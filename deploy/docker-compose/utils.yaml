@@ -211,6 +211,27 @@ services:
     networks:
       - app-net
 
+  _ensure_s3_server_bucket_exists:
+    image: "${GC_S3_CLIENT_IMAGE}"
+    environment:
+      BUCKET_NAME: advana-data-zone
+    entrypoint:
+      - "/bin/bash"
+      - "-o"
+      - "pipefail"
+      - "-o"
+      - "errexit"
+      - "-o"
+      - "nounset"
+      - "-c"
+    command:
+      - |
+        mc config host add s3-server http://s3-server:9000 dev-access-key dev-secret-key;
+        (mc ls s3-server | grep -q $$BUCKET_NAME) || mc mb "$${BUCKET_NAME}"
+
+    networks:
+      - app-net
+  
   _data_pipelines_cmd:
     image: "${GC_DATA_PIPELINES_IMAGE}"
     networks:
