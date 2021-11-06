@@ -19,14 +19,14 @@ function main() {
   compose_wrapper run -- _elasticsearch_wait_until_ready
 
   # config utils
-  compose_wrapper run -- _render_data_pipeline_config &> /dev/null
+  compose_wrapper run -- _render_data_pipeline_config
 
   # config base services
   compose_wrapper run -- _ensure_s3_server_bucket_exists
-  compose_wrapper run -- _postgres_config_step_1_setup_web_schema &> /dev/null
-  compose_wrapper run -- _postgres_config_step_2_setup_data_schema &> /dev/null
-  compose_wrapper run -- _postgres_config_step_3_setup_um_schema &> /dev/null
-  compose_wrapper run -- _postgres_config_step_4_seed_app_tables &> /dev/null
+  compose_wrapper run -- _postgres_config_step_1_setup_web_schema
+  compose_wrapper run -- _postgres_config_step_2_setup_data_schema
+  compose_wrapper run -- _postgres_config_step_3_setup_um_schema
+  compose_wrapper run -- _postgres_config_step_4_seed_app_tables
   
   # start up remaining services
   compose_wrapper up -d -- web ml-api
