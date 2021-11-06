@@ -72,7 +72,7 @@ services:
   redis:
     image: "${GC_REDIS_IMAGE}"
     container_name: "${COMPOSE_PROJECT_NAME:-gc}-redis"
-    user: redis
+    user: root
     ports:
       - "6379:6379"
     volumes:
@@ -100,7 +100,7 @@ services:
   elasticsearch:
     image: "${GC_ELASTICSEARCH_IMAGE}"
     container_name: "${COMPOSE_PROJECT_NAME:-gc}-elasticsearch"
-    user: elasticsearch
+    user: root
     ports:
       - "9200:9200"
       - "9300:9300"
@@ -114,7 +114,7 @@ services:
   kibana:
     image: "${GC_KIBANA_IMAGE}"
     container_name: "${COMPOSE_PROJECT_NAME:-gc}-kibana"
-    user: kibana
+    user: root
     depends_on:
       - elasticsearch
     ports:

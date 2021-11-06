@@ -240,7 +240,7 @@ services:
   
   _data_pipelines_cmd:
     image: "${GC_DATA_PIPELINES_IMAGE}"
-    user: "1001:1001"
+    user: root
     volumes:
       - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered/:Z"
     networks:
@@ -248,7 +248,7 @@ services:
 
   _render_data_pipeline_config:
     image: "${GC_DATA_PIPELINES_IMAGE}"
-    user: "1001:1001"
+    user: root
     volumes:
       - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered/:Z"
     entrypoint:
