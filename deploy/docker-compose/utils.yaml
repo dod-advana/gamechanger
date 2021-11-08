@@ -238,6 +238,39 @@ services:
     networks:
       - app-net
   
+  _ensure_and_populate_basic_es_indices:
+    image: "${GC_DATA_PIPELINES_IMAGE}"
+    user: root
+    entrypoint:
+      - "/bin/bash"
+      - "-o"
+      - "pipefail"
+      - "-o"
+      - "errexit"
+      - "-o"
+      - "nounset"
+      - "-c"
+    command:
+      - |
+        python -m dataPipelines.gc_elasticsearch_publisher setup-index \
+          -i search_history_1 \
+          -a search_history \
+          -m ./configuration/elasticsearch-config/local-search_history.json
+
+        python -m dataPipelines.gc_elasticsearch_publisher setup-index \
+          -i gamechanger_1 \
+          -a gamechanger \
+          -m ./configuration/elasticsearch-config/local.json
+
+        python -m dataPipelines.gc_elasticsearch_publisher entity-insert \
+          -i entities_1 \
+          -a entities \
+          -m /opt/app-root/src/configuration/elasticsearch-config/local-entities.json
+
+    networks:
+      - app-net
+
+
   _data_pipelines_cmd:
     image: "${GC_DATA_PIPELINES_IMAGE}"
     user: root
