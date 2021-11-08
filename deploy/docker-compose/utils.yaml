@@ -241,6 +241,8 @@ services:
   _ensure_and_populate_basic_es_indices:
     image: "${GC_DATA_PIPELINES_IMAGE}"
     user: root
+    volumes:
+      - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered/:Z"
     entrypoint:
       - "/bin/bash"
       - "-o"
