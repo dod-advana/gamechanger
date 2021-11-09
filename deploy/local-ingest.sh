@@ -19,7 +19,7 @@ function main() (
   local container_parsed_doc_dir=/tmp/parsed
 
   compose_wrapper run \
-    ${S3_BUCKET_NAME:+-e S3_BUCKET_NAME=${S3_BUCKET_NAME}} \
+    ${bucket_name:+-e S3_BUCKET_NAME=${bucket_name}} \
     ${ES_INDEX_NAME:+-e ES_INDEX_NAME=${ES_INDEX_NAME}} \
     ${ES_ALIAS_NAME:+-e ES_ALIAS_NAME=${ES_ALIAS_NAME}} \
     ${raw_doc_dir:+-v "${raw_doc_dir}:${container_raw_doc_dir}"} \
