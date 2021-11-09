@@ -255,17 +255,17 @@ services:
     command:
       - |
         python -m dataPipelines.gc_elasticsearch_publisher setup-index \
-          -i search_history_1 \
+          -i search_history_original \
           -a search_history \
           -m ./configuration/elasticsearch-config/local-search_history.json
 
         python -m dataPipelines.gc_elasticsearch_publisher setup-index \
-          -i gamechanger_1 \
+          -i gamechanger_original \
           -a gamechanger \
           -m ./configuration/elasticsearch-config/local.json
 
         python -m dataPipelines.gc_elasticsearch_publisher entity-insert \
-          -i entities_1 \
+          -i entities_original \
           -a entities \
           -m /opt/app-root/src/configuration/elasticsearch-config/local-entities.json
 
