@@ -262,6 +262,8 @@ services:
       - |
         bash /tmp/scripts/dev/update_main_clone_config.sh > /tmp/update.sql
         psql -f /tmp/update.sql
+    networks:
+      - app-net
   
   _ensure_and_populate_basic_es_indices:
     image: "${GC_DATA_PIPELINES_IMAGE}"
