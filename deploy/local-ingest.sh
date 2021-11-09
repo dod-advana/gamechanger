@@ -25,8 +25,8 @@ function main() (
     ${raw_doc_dir:+-v "${raw_doc_dir}:${container_raw_doc_dir}"} \
     ${parsed_doc_dir:+-v "${parsed_doc_dir}:${container_parsed_doc_dir}"} \
     -- _data_pipelines_cmd ./dataPipelines/scripts/local_ingest.sh \
-      ${raw_doc_dir:+-v "${container_raw_doc_dir}"} \
-      ${parsed_doc_dir:+-v "${container_parsed_doc_dir}"}
+      ${raw_doc_dir:+"${container_raw_doc_dir}"} \
+      ${parsed_doc_dir:+"${container_parsed_doc_dir}"}
 )
 
 main "$@"
