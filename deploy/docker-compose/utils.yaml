@@ -132,7 +132,6 @@ services:
       - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/sql/:Z"
     command:
       - |
-        psql -f /tmp/sql/create_clones.sql
         psql -f /tmp/sql/pop_mini_RE.sql
         psql -f /tmp/sql/create_admins.sql
     networks:
@@ -237,6 +236,32 @@ services:
         (mc ls s3-server | grep -q $$BUCKET_NAME) || mc mb s3-server/"$${BUCKET_NAME}"
     networks:
       - app-net
+  
+  _update_primary_clone_config:
+    image: "${GC_DATA_PIPELINES_IMAGE}"
+    user: root
+    environment:
+      CLONE_CONFIG_MAIN_VIEW_MODULE: "'default/defaultMainViewHandler'"
+      CLONE_CONFIG_S3_BUCKET: "'advana-data-zone/bronze'"
+      PGPASSWORD: password
+      PGHOST: postgres
+      PGUSER: postgres
+      PGDATABASE: postgres
+    volumes:
+      - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/scripts/:Z"
+    entrypoint:
+      - "/bin/bash"
+      - "-o"
+      - "pipefail"
+      - "-o"
+      - "errexit"
+      - "-o"
+      - "nounset"
+      - "-c"
+    command:
+      - |
+        bash /tmp/scripts/dev/update_main_clone_config.sh > tmp/update.sql
+        psql -f /tmp/update.sql
   
   _ensure_and_populate_basic_es_indices:
     image: "${GC_DATA_PIPELINES_IMAGE}"
