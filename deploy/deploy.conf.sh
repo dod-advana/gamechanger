@@ -26,10 +26,10 @@ declare -A REPO_URL_MAP=(\
 )
 
 declare -A REPO_TAG_MAP=(\
-  [gamechanger-web]="task/UOT-117914" \
-  [gamechanger-data]="task/UOT-117914" \
-  [gamechanger-ml]="task/UOT-117914" \
-  [gamechanger-neo4j-plugin]="task/UOT-117914" \
+  [gamechanger-web]="dev" \
+  [gamechanger-data]="dev" \
+  [gamechanger-ml]="dev" \
+  [gamechanger-neo4j-plugin]="main" \
   [gamechanger-crawlers]="dev" \
 )
 
