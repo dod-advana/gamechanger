@@ -27,7 +27,7 @@ services:
     image: "${GC_ML_API_IMAGE}"
     build:
       context: "./deploy/build/gamechanger-ml/"
-      dockerfile: "./gamechangerml/api/fastapi/rhel8.mlapp.Dockerfile"
+      dockerfile: "./gamechangerml/api/fastapi/cpu.mlapp.Dockerfile"
       args:
         APP_UID: 1001
         APP_GID: 1001
