@@ -1,0 +1,164 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "app.ml" . }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: ml
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  serviceName: {{ include "app.ml" . }}
+  replicas: {{ .Values.ml.replicaCount }}
+  updateStrategy:
+    type: {{ .Values.ml.updateStrategy.type }}
+    {{- if (eq "Recreate" .Values.ml.updateStrategy.type) }}
+    rollingUpdate: null
+    {{- end }}
+  selector:
+    matchLabels: {{- include "common.labels.matchLabels" . | nindent 6 }}
+      app.kubernetes.io/component: ml
+  template:
+    metadata:
+      annotations:
+        deploy-ts: {{ now | quote }}
+        # {{- /* checksum/<x> annotations are used here to force helm to redeploy when associated config values change */}}
+        {{- if not .Values.ml.existingSecret }}
+        checksum/secret: {{ include (print $.Template.BasePath "/ml/secret.yaml") . | sha256sum }}
+        {{- end}}
+        {{- if and (not .Values.ml.tls.existingSecret) .Values.ml.tls.enabled }}
+        checksum/tls-secret: {{ include (print $.Template.BasePath "/ml/tls-secret.yaml") . | sha256sum }}
+        {{- end}}
+        checksum/configmap: {{ include (print $.Template.BasePath "/ml/configmap.yaml") . | sha256sum }}
+        {{- if .Values.ml.httpsProxy.enabled }}
+        checksum/https-proxy-configmap: {{ include (print $.Template.BasePath "/ml/https-proxy-configmap.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.ml.podAnnotations -}}{{- toYaml . | nindent 8 }}{{- end }} 
+      labels:   
+      {{- include "common.labels.standard" . | nindent 8 }}
+        role: ml
+        app.kubernetes.io/component: ml
+      {{- if .Values.commonLabels }}
+      {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- include "app.ml.imagePullSecrets" . | nindent 6 }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "app.ml.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: 10
+      volumes:
+        {{- if .Values.ml.httpsProxy.enabled }}
+        - name: tls-secret-files
+          secret:
+            secretName: {{ include "app.ml.tlsSecretName" . | quote }}
+        - name: https-proxy-config
+          configMap:
+            name: {{ include "app.ml.httpsProxy.configMapName" . | quote }}
+        {{- end }}
+      {{- if .Values.ml.init.container.enabled }}
+      initContainers:
+        - name: init-ml
+          image: {{ template "app.ml.init.container.image" . }}
+          imagePullPolicy: {{ .Values.ml.image.pullPolicy | quote }}
+          command: ["/bin/bash", "-c"]
+          script:
+            - |
+              {{- .Values.ml.init.container.script | trim | nindent 16 }}
+          {{- with .Values.ml.appContainerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            - name: APP_VERSION
+              value: {{ default "1.0.0" .Chart.AppVersion | quote }}
+          {{- if .Values.ml.extraEnvVars }}
+            {{- include "common.tplvalues.render" ( dict "value" .Values.ml.extraEnvVars "context" $ ) | nindent 12 }}
+          {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "app.ml.configMapName" .  | quote }}
+            {{- if .Values.ml.extraEnvVarsCM }}
+            - configMapRef:
+                name: {{ include "common.tplvalues.render" ( dict "value" .Values.ml.extraEnvVarsCM "context" $ ) }}
+            {{- end }}
+            {{- if .Values.ml.extraEnvVarsSecret }}
+            - secretRef:
+                name: {{ include "common.tplvalues.render" ( dict "value" .Values.ml.extraEnvVarsSecret "context" $ ) }}
+            {{- end }}
+      {{- end }}
+      containers:
+        - name: {{ include "app.ml" . }}
+          image: {{ template "app.ml.image" . }}
+          imagePullPolicy: {{ .Values.ml.image.pullPolicy | quote }}
+          {{- with .Values.ml.startCommand }}
+          command:
+            {{- range . }}
+            {{- printf "- %s" (. | quote) | nindent 10 }}
+            {{- end -}}
+          {{- end }}
+          {{- with .Values.ml.appContainerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            - name: APP_VERSION
+              value: {{ default "1.0.0" .Chart.AppVersion | quote }}
+          {{- if .Values.ml.extraEnvVars }}
+            {{- include "common.tplvalues.render" ( dict "value" .Values.ml.extraEnvVars "context" $ ) | nindent 12 }}
+          {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "app.ml.configMapName" .  | quote }}
+            {{- if .Values.ml.extraEnvVarsCM }}
+            - configMapRef:
+                name: {{ include "common.tplvalues.render" ( dict "value" .Values.ml.extraEnvVarsCM "context" $ ) }}
+            {{- end }}
+            {{- if .Values.ml.extraEnvVarsSecret }}
+            - secretRef:
+                name: {{ include "common.tplvalues.render" ( dict "value" .Values.ml.extraEnvVarsSecret "context" $ ) }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.ml.service.ports.http }}
+          {{- with .Values.ml.probes -}}{{- toYaml . | nindent 10}}{{- end }}
+          {{- with .Values.ml.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- if .Values.ml.httpsProxy.enabled }}
+        - name: https-proxy
+          image: {{ template "app.ml.httpsProxy.image" . }}
+          imagePullPolicy: {{ .Values.ml.image.pullPolicy | quote }}
+          args:
+            - nginx
+            - "-c"
+            - "/etc/nginx/nginx.conf"
+          volumeMounts:
+            - name: https-proxy-config
+              mountPath: "/etc/nginx/nginx.conf"
+              subPath: "nginx.conf"
+              readOnly: true
+            - name: tls-secret-files
+              mountPath: "/etc/nginx/tls"
+              readOnly: true
+          ports:
+            - name: https-proxy
+              containerPort: {{ .Values.ml.httpsProxy.containerPort }}
+              protocol: TCP
+          {{- with .Values.ml.httpsProxy.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- end }}
+

@@ -1,0 +1,453 @@
+## @section Global parameters
+## Global parameters
+## Please, note that this will override parameters, including dependencies, configured to use the global value
+## Current available global parameters: imageRegistry, imagePullSecrets and storageClass
+
+global:
+  imageRegistry: ""
+  ## E.g.
+  ## imagePullSecrets:
+  ##   - myRegistryKeySecretName
+  ##
+  imagePullSecrets: []
+  storageClass: ""
+
+  ## @param global.postgresql.postgresqlDatabase PostgreSQL database (overrides `postgresqlDatabase`)
+  ## @param global.postgresql.postgresqlUsername PostgreSQL username (overrides `postgresqlUsername`)
+  ## @param global.postgresql.existingSecret Name of existing secret to use for PostgreSQL passwords (overrides `existingSecret`)
+  ## @param global.postgresql.postgresqlPassword PostgreSQL admin password (overrides `postgresqlPassword`)
+  ## @param global.postgresql.servicePort PostgreSQL port (overrides `service.port`
+  ## @param global.postgresql.replicationPassword Replication user password (overrides `replication.password`)
+  ##
+  postgresql:
+    postgresqlDatabase: ""
+    postgresqlUsername: ""
+    existingSecret: ""
+    postgresqlPassword: ""
+    servicePort: ""
+    replicationPassword: ""
+
+## @section Common parameters
+##
+
+## @param nameOverride String to partially override common.names.fullname template (will maintain the release name)
+##
+nameOverride: ""
+## @param fullnameOverride String to fully override common.names.fullname template
+##
+fullnameOverride: ""
+## @param clusterDomain Kubernetes cluster domain
+##
+clusterDomain: cluster.local
+## @param extraDeploy Array of extra objects to deploy with the release (evaluated as a template)
+##
+extraDeploy: []
+## @param commonLabels Add labels to all the deployed resources
+##
+commonLabels: {}
+## @param commonAnnotations Add annotations to all the deployed resources
+##
+commonAnnotations: {}
+
+## Enable diagnostic mode in the deployment
+##
+diagnosticMode:
+  ## @param diagnosticMode.enabled Enable diagnostic mode (all probes will be disabled and the command will be overridden)
+  ##
+  enabled: false
+  ## @param diagnosticMode.command Command to override all containers in the deployment
+  ##
+  command:
+    - sleep
+  ## @param diagnosticMode.args Args to override all containers in the deployment
+  ##
+  args:
+    - infinity
+
+ml:
+  # image - <Object>
+  #   Main app image details - also used to run all jobs defined in .Values
+  image:
+    registry: ""
+    repository: "advana/gamechanger/gamechanger-ml"
+    pullPolicy: Always
+    tag: "latest"
+
+  # replicaCount - <Integer >= 1>
+  #   Number of app pod replicas to launch in the load-balancing group.
+  #
+  #   Tips:
+  #   - when troubleshooting, set to 1 to avoid dealing with complications of load-balanced traffic
+  replicaCount: 1
+
+  existingConfigMap: ""
+
+  updateStrategy:
+    type: RollingUpdate
+
+  # startCommand - <Array of strings>
+  #   Entrypoint/command to be executed by the main application pod.
+  #   Will completely override any entrypoint/cmd baked into the container.
+  #
+  #   Tips:
+  #     - when troubleshooting, set to ["sleep", "infinity"] then exec into container and tweak/relaunch app as necessary
+  startCommand:
+    - "/bin/bash"
+    - "./gamechangerml/api/fastapi/startFast.sh"
+  init:
+    # runs every time ml container is restarted
+    container:
+      enabled: true
+      image:
+        registry: ""
+        repository: "advana/gamechanger/gamechanger-ml"
+        tag: "latest"
+      script: |
+        echo test
+    # runs once per chart release as a k8s job
+    job:
+      enabled: true
+      image:
+        registry: ""
+        repository: "advana/gamechanger/gamechanger-ml"
+        tag: "latest"
+      script: |
+        echo test
+
+  # probes - <Object>
+  #   Probes for determining pod/container health, as per ...
+  #   https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+  #
+  #   Tips:
+  #     - if troubleshooting, set to empty object {}; to avoid k8s restarting container and blocking traffic to it
+  probes: {}
+
+  # podAnnotations - <Object>  additional pod annotations
+  podAnnotations:
+    iam.amazonaws.com/role: advana/k8s/s3.wildcard
+
+  # service - <Object/Map>
+  #   Port details of the service used to open application pod to connections from outside.
+  #   Note: must be of type NodePort and only http/https keys are supported.
+  #   For syntax, refer to service.spec.ports[*] definitions of the NodePort service https://kubernetes.io/docs/concepts/services-networking/service/#nodeport
+  service:
+    type: NodePort # ClusterIP
+    ports:
+      http: 5000
+      https: 443
+    nodePorts:
+      http: 31009
+      https: 31209
+    extraPorts:
+      []
+      # - port: 443
+      #   targetPort: 8443
+      #   nodePort: 31209
+      #   protocol: TCP
+      #   name: https
+
+  # podSecurityContext - <Object>
+  #   Sets security context for main application and job pods.
+  #   This primarily comes into play when mounting files and volumes, but has other uses.
+  #   For more on what goes in here, reference https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
+  podSecurityContext:
+    fsGroup: 1001
+    fsGroupChangePolicy: "OnRootMismatch"
+
+  # appContainerSecurityContext - <Map>
+  #   Security context for app and job containers.
+  #   It's useful to define this to match user-id and group-id of the application and its' files inside container
+  #   For more on what goes in here, reference https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container
+  appContainerSecurityContext:
+    runAsUser: 1001
+    runAsGroup: 1001
+
+  # serviceAccount - <Map>
+  #   Config of service account to be used by the app and job pods
+  #   Service account determines what permissions pods/resources have when they interact with other k8s resources & API's
+  serviceAccount:
+    # create - <bool> - whether to attempt creating the service account
+    create: true
+    # name - <string> - override with custom name. useful if there is a pre-existing service account you should be using
+    name: ""
+
+  # resources - <Map>
+  #   Defines minimum and maximum cpu/memory requirements for each application pod (except one-time-job pods)
+  #   For more on what goes in here, reference https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  resources:
+    requests:
+      memory: "20Gi"
+      cpu: "4"
+
+  # extraEnvVars - An array to add extra environment variables
+  extraEnvVars: []
+  # extraEnvVarsSecret - existing Secret with extra environment variables
+  extraEnvVarsSecret: ""
+  # extraEnvVarsCM - existing ConfigMap with extra environment variables
+  extraEnvVarsCM: ""
+  # podTolerations - <Array[Map[string, string]]>
+  #   Pod tolerations. Used to make sure pod runs on nodes that are specifically tainted to prevent other pods from
+  #   scheduling there by default. Reference https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  podTolerations:
+    - key: "HighMemory"
+      operator: "Equal"
+      effect: "NoExecute"
+      value: "true"
+
+  # httpsProxy - <Map>
+  #   Configuration of the https proxy sidecar
+  httpsProxy:
+    enabled: true
+    image:
+      repository: registry1.dso.mil/ironbank/opensource/nginx/nginx
+      tag: "1.21.1"
+      pullPolicy: IfNotPresent
+    existingConfigMap: ""
+    sslCiphers: "HIGH:!aNULL:!eNULL:!MD5"
+    sslProtocols: "TLSv1.2 TLSv1.3"
+    containerPort: 8443
+    securityContext:
+      runAsUser: 998
+      runAsGroup: 996
+
+  tls:
+    enabled: true
+    # auto-generate tls bundle completely
+    autoGenerated: true
+    # provide an existing secret with {tls.key, ca.crt, tls.crt} keys defined
+    existingSecret: ""
+    # if no existing secret, these should be set and mounted
+    # Certificate file on ML container(s)
+    certFilename: "tls.crt"
+    # Path to cert's key file on ML container(s)
+    certKeyFilename: "tls.key"
+    # Path to CA certificate file on ML container(s) [removed]
+    certCAFilename: "ca.crt"
+    #
+    dhParamsFileName: ""
+
+portal:
+  image:
+    registry: "092912502985.dkr.ecr.us-east-1.amazonaws.com"
+    repository: "gc-web"
+    tag: "latest"
+
+pipelines:
+  image:
+    registry: "092912502985.dkr.ecr.us-east-1.amazonaws.com"
+    repository: "gc-data-pipelines"
+    tag: "latest"
+
+crawlers: {}
+
+neo4j: {}
+
+##########################################
+# External/dependency charts #
+##########################################
+elasticsearch:
+  enabled: true
+
+externalElasticsearch:
+  ## @param elasticsearch.hosts List of elasticsearch hosts to connect to.
+  ## e.g:
+  ## hosts:
+  ##   - elasticsearch-1
+  ##   - elasticsearch-2
+  ##
+  hosts: []
+  ## @param elasticsearch.port Elasticsearch port
+  ##
+  port: ""
+
+  security:
+    auth:
+      ## @param elasticsearch.security.auth.enabled Set to 'true' if Elasticsearch has authentication enabled
+      ##
+      enabled: false
+      ## @param elasticsearch.security.auth.kibanaUsername Kibana server user to authenticate with Elasticsearch
+      ##
+      kibanaUsername: "elastic"
+      ## @param elasticsearch.security.auth.kibanaPassword Kibana server password to authenticate with Elasticsearch
+      ##
+      kibanaPassword: ""
+      ## @param elasticsearch.security.auth.existingSecret Name of the existing secret containing the Password for the Kibana user
+      ##
+      existingSecret: ""
+    tls:
+      ## @param elasticsearch.security.tls.enabled Set to 'true' if Elasticsearch API uses TLS/SSL (HTTPS)
+      ##
+      enabled: false
+      ## @param elasticsearch.security.tls.verificationMode Verification mode for SSL communications.
+      ## Supported values: full, certificate, none.
+      ## Ref: https://www.elastic.co/guide/en/kibana/7.x/settings.html#elasticsearch-ssl-verificationmode
+      verificationMode: "full"
+      ## @param elasticsearch.security.tls.existingSecret Name of the existing secret containing Elasticsearch Truststore or CA certificate. Required unless verificationMode=none
+      ##
+      existingSecret: ""
+      ## @param elasticsearch.security.tls.usePemCerts Set to 'true' to use PEM certificates instead of PKCS12.
+      ##
+      usePemCerts: false
+      ## @param elasticsearch.security.tls.truststorePassword Password to access the PKCS12 trustore in case it is password-protected.
+      ##
+      truststorePassword: ""
+      ## @param elasticsearch.security.tls.passwordsSecret Name of a existing secret containing the Truststore password
+      ##
+      passwordsSecret: ""
+
+kibana:
+  enabled: false
+  # image:
+  #   registry: ""
+  #   repository: "kibana"
+  #   tag: "7.10.1"
+
+## @section PostgreSQL Parameters
+
+## PostgreSQL chart configuration
+## ref: https://github.com/bitnami/charts/blob/master/bitnami/postgresql/values.yaml
+## @param postgresql.enabled If external database is used, set it to `false`
+## @param postgresql.nameOverride String to partially override common.names.fullname template with a string (will prepend the release name)
+## @param postgresql.postgresqlUsername Postgresql username
+## @param postgresql.postgresqlPassword Postgresql password
+## @param postgresql.existingSecret Set Postgresql password via an existing secret
+## @param postgresql.postgresqlExtendedConf [object] Extended runtime config parameters (appended to main or default configuration)
+## @param postgresql.replication.enabled Enable replicated postgresql
+## @param postgresql.persistence.enabled Enable persistence for PostgreSQL
+##
+postgresql:
+  enabled: true
+  nameOverride: ""
+  postgresqlUsername: postgres
+  postgresqlPassword: not-secure-database-password
+  ## Name of existing secret to use for PostgreSQL passwords.
+  ## If an existingSecret is used it will overwrite postgresqlUsername and postgresqlPassword.
+  ## The secret has to contain at least the key postgresql-postgres-password.
+  ##
+  ## Example Secret:
+  ## apiVersion: v1
+  ## kind: Secret
+  ## metadata:
+  ##   name: mysecret
+  ## type: Opaque
+  ## data:
+  ##   postgresqlUsername: YWRtaW4=
+  ##   postgresqlPassword: MWYyZDFlMmU2N2Rm
+  existingSecret: ""
+  postgresqlExtendedConf:
+    maxConnections: 1024
+  replication:
+    enabled: false
+  persistence:
+    enabled: true
+  ## @param postgresql.initdbScripts [object] Initdb scripts to create databases
+  ##
+  initdbScripts:
+    test.sql: |
+      CREATE DATABASE test;
+      CREATE USER server;
+      alter user server with encrypted password 'password';
+      GRANT ALL PRIVILEGES ON DATABASE test TO server;
+## If the PostgreSQL database included in the chart is disabled, will
+## use below parameters to connect to an external PostgreSQL server.
+##
+externalPostgresql:
+  ## @param externalDatabase.host Host of the external database
+  ##
+  host: localhost
+  ## @param externalDatabase.user Existing username in the external db
+  ##
+  user: app_user
+  ## @param externalDatabase.password Password for the above username
+  ##
+  password: ""
+  ## @param externalDatabase.port Port of the external database
+  ##
+  port: 5432
+  ## @param externalDatabase.sslmode External database ssl mode
+  ##
+  sslmode: disable
+  ## @param externalDatabase.coreDatabase External database name for core
+  ##
+  coreDatabase: ""
+
+redis:
+  # @param redis.enabled If external redis is used, set it to `false`
+  ##
+  enabled: true
+  ## @param redis.nameOverride String to partially override common.names.fullname template with a string (will prepend the release name)
+  ##
+  nameOverride: ""
+  ## image:
+  ##   tag:
+  auth:
+    ## @param redis.auth.enabled Use redis password
+    ##
+    enabled: false
+    ## @param redis.auth.password Redis password
+    ## Defaults to a random 10-character alphanumeric string if not set and auth.enabled is true.
+    ## It should always be set using the password value or in the existingSecret to avoid issues
+    ## with the app.
+    ## The password value is ignored if existingSecret is set
+    password: ""
+  ## @param redis.architecture Cluster settings
+  ##
+  architecture: standalone
+  ## Redis&trade; Master parameters
+  ## @param redis.master.persistence.enabled Enable persistence for master Redis
+  ##
+  master:
+    persistence:
+      enabled: true
+    ## @param redis.master.priorityClassName Redis pods Priority Class Name
+    ## ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass
+    ##
+    priorityClassName: ""
+  ## Redis&trade; Replica parameters
+  ## @param redis.replica.persistence.enabled Enable persistence for replica Redis
+  ##
+  replica:
+    persistence:
+      enabled: true
+## If the Redis included in the chart is disabled, the app will use below
+## Redis parameters to connect to an external Redis server.
+## Support for both Redis and Redis+Sentinel
+##
+externalRedis:
+  ## @param externalRedis.host Host of the external redis
+  ##
+  host: localhost
+  ## @param externalRedis.port Port of the external redis
+  ##
+  port: 6379
+  ## Redis&trade; sentinel configuration
+  ## If sentinel is enabled the below sentinel configurations are used as the hostname
+  ##
+  sentinel:
+    ## @param externalRedis.sentinel.enabled If external redis with sentinal is used, set it to `true`
+    ##
+    enabled: false
+    ## @param externalRedis.sentinel.masterSet Name of sentinel masterSet if sentinel is used
+    ##
+    masterSet: "mymaster"
+    ## @param externalRedis.sentinel.hosts Sentinel hosts and ports in the format
+    ## <host_sentinal1>:<port_sentinel1>,<host_sentinal2>:<port_sentinel2>,<host_sentinal2>:<port_sentinel3>
+    ##
+    hosts: ""
+  ## @param externalRedis.password Password for the external redis
+  ##
+  password: ""
+  ## @param externalRedis.coreDatabaseIndex Index for core database
+  ##
+  coreDatabaseIndex: "0"
+
+minio:
+  enabled: true
+  # image:
+  #   registry: "docker.io"
+  #   repository: "bitnami/minio"
+  #   tag: "2022.1.8-debian-10-r1"
+  # clientImage:
+  #   registry: "docker.io"
+  #   repository: "bitnami/minio-client"
+  #   tag: "2022.1.7-debian-10-r1"

@@ -2,3 +2,6 @@
 /deploy/config/
 /deploy/var/
 /deploy/.env
+/chart/certs/*
+!/chart/certs/README.md
+/chart/charts/*.tgz
