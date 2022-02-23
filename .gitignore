@@ -1,4 +1,5 @@
 /deploy/build/
+/deploy/docker-compose/build
 /deploy/config/
 /deploy/var/
 /deploy/.env
@@ -7,3 +8,4 @@
 /chart/charts/*.tgz
 deploy/new.sh
 deploy/docker-compose/combined.yaml
+*.DS_Store

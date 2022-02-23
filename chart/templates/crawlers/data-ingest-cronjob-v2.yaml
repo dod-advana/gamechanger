@@ -1,0 +1,44 @@
+# using the Dockerfile found in gamechanger-crawlers/dataPipelines/paasJobs/docker/
+# values.yaml should have crawler.cronjob.crons array of crawlers to run with schedule, name, id, scriptFile etc.
+{{- $defaultImage := include "app.crawlers.default.image" . }}
+{{- range .Values.crawlers.cronJobs }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  namespace: {{ $.Release.Namespace }}
+spec:
+  concurrencyPolicy: "Allow"
+  failedJobsHistoryLimit: 1
+  schedule: {{ .schedule }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: {{ .name }}-cronjob
+              image: {{ template "app.crawlers.image" (dict "current" . "default" $defaultImage) }}
+              env:
+                - name: "MAX_PARSER_THREADS"
+                  value: {{ .parser_threads | default 68 | int }}
+                - name: "MAX_OCR_THREADS_PER_FILE"
+                  value: {{ .max_ocr_threads | default 1 | int }}
+                - name: "SKIP_NEO4J_UPDATE"
+                  value: {{ .skip_neo4j | default "no" | quote}}
+                - name: "LOCAL_SPIDER_LIST_FILE"
+                  value: "/etc/crawler_schedule/{{ .name }}.txt"
+                - name: "JOB_NAME"
+                  value: {{ .name | quote }}
+              # command: 
+              # - 
+              # restartPolicy: {{ .restartPolicy }}
+              volumeMounts:
+                - name: local_spider_list
+                  mountPath: /etc/crawler_schedule
+          volumes:
+            - name: local_spider_list
+              configMap:
+                name: crawlers-configmap
+  successfulJobsHistoryLimit: 3
+  suspend: false
+{{- end }}

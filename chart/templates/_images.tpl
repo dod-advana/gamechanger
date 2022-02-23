@@ -108,3 +108,22 @@ Return the proper init job image name
 {{- define "app.ml.httpsProxy.image" -}}
 {{ include "common.images.image" (dict "imageRoot" .Values.ml.httpsProxy.image "global" .Values.global) }}
 {{- end -}}
+
+{{/*
+Return the proper default crawlers cronjob image name 
+*/}}
+{{- define "app.crawlers.default.image" -}}
+{{ include "common.images.image" (dict "imageRoot" .Values.crawlers.defaultCronJobImage "global" .Values.global) }}
+{{- end -}}
+
+{{/*
+Return the proper crawlers cronjob image name 
+*/}}
+{{- define "app.crawlers.image" -}}
+{{- if .current.image }}
+    {{- include "common.images.image" (dict "imageRoot" .current.image ) -}}
+{{- else -}}
+{{- printf "%s" .default -}}
+{{- end -}}
+{{- end -}}
+
