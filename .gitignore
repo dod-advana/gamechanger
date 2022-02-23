@@ -5,3 +5,5 @@
 /chart/certs/*
 !/chart/certs/README.md
 /chart/charts/*.tgz
+deploy/new.sh
+deploy/docker-compose/combined.yaml

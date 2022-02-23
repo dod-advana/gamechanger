@@ -49,7 +49,7 @@ commonLabels: {}
 ##
 commonAnnotations: {}
 
-## Enable diagnostic mode in the deployment
+## Enable diagnostic mode throughout the application
 ##
 diagnosticMode:
   ## @param diagnosticMode.enabled Enable diagnostic mode (all probes will be disabled and the command will be overridden)
