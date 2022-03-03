@@ -36,7 +36,7 @@ export NPM_AUTH_TOKEN=TOKEN-GOES-HERE
 ```shell
 ./pull.sh
 ```
-5. Run `build.sh`. This will build GAMECHANGER images
+5. Run `build.sh`. This will build GAMECHANGER sub-component images.
 ```shell
 ./build.sh
 ```
@@ -44,12 +44,12 @@ export NPM_AUTH_TOKEN=TOKEN-GOES-HERE
 ```shell
 ./start.sh
 ```
-7. Using a web browser, navigate to your machine's IP address (ie 127.0.0.1) or hostname (ie localhost) on port 8080. 
+7. Using a web browser, navigate to your machine's IP address (ie 127.0.0.1) or hostname (ie localhost) on port 8080 or 8443.
 
 ## Populating GAMECHANGER data store with local files
-[GAMECHANGER crawlers](https://github.com/dod-advana/gamechanger-crawlers) run periodically to retrieve source content and may be found here. Additional ingest components may be found in the [GAMECHANGERS data](https://github.com/dod-advana/gamechanger-data) project. 
+[GAMECHANGER crawlers](https://github.com/dod-advana/gamechanger-crawlers) run periodically to retrieve source content. Additional ingest components may be found in the [GAMECHANGERS data](https://github.com/dod-advana/gamechanger-data) project. An image to support ingest operations is built during the `build.sh` script's execution, but crawling is left as an exercise for prospective users.
 
-To demonstrate ingest, however, you may use the `gamechanger/deploy/local-ingest.sh` script with a directory containing raw files for ingest. 
+To demonstrate ingest, you may use the `gamechanger/deploy/local-ingest.sh` script with a directory containing raw files for ingest. 
 ```shell
 ./local-ingest.sh /path/to/raw/files 
 ```  
