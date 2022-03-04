@@ -70,3 +70,11 @@
   {{- .default.AWS_DEFAULT_REGION }}
 {{- end -}}
 {{- end }}
+
+{{- define "app.crawlers.ENDPOINT_URL" }}
+{{- if .current.ENDPOINT_URL }}
+  {{- .current.ENDPOINT_URL }}
+{{- else -}}
+  {{- .default.ENDPOINT_URL }}
+{{- end -}}
+{{- end }}

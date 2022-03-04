@@ -16,6 +16,25 @@ spec:
     spec:
       template:
         spec:
+          # init container to pull latest aws-cli cacerts.pem and combine with
+          # configmap's cacerts.pem, then store in /tmp directory as shared volume with
+          # the cronjob containers
+          # initContainers:
+          #   - name: append-certs
+          #     image: amazon/aws-cli
+          #     command:
+          #       - /bin/sh
+          #       - -c
+          #       - cat 
+          #       - /etc/certificates/cacert.pem
+          #       - /usr/local/aws-cli/v2/current/dist/awscli/botocore/cacert.pem
+          #       - ">"
+          #       - /tmp/certificates/cacert.pem
+          #     volumeMounts:
+          #       - name: tmp
+          #         mountPath: /tmp/certificates
+          #       - name: certificates-configmap
+          #         mountPath: /etc/certificates
           containers:
             - name: {{ .name }}-cronjob
               image: {{ template "app.crawlers.image" (dict "current" . "default" $defaultImage) }}
@@ -43,7 +62,6 @@ spec:
                   value: {{ include "app.crawlers.LOCAL_PREVIOUS_MANIFEST_LOCATION" (dict "current" . "default" $defaultJobConfigs) }}
                 - name: "TEST_RUN"
                   value: {{ include "app.crawlers.TEST_RUN" (dict "current" . "default" $defaultJobConfigs) }}
-
                   # Variables below for slack notification config - used in job_runner.sh
                   # Could move to a configmap and include using envFrom, slack hook URL should also be secret
                 - name: "SEND_NOTIFICATIONS"
@@ -59,18 +77,35 @@ spec:
                   value: {{ include "app.crawlers.UPLOAD_LOGS" (dict "current" . "default" $defaultJobConfigs) }}
                 - name: "S3_BASE_LOG_PATH_URL"
                   value: {{ include "app.crawlers.S3_BASE_LOG_PATH_URL" (dict "current" . "default" $defaultJobConfigs) }}
+                - name: "ENDPOINT_URL"
+                  value: {{ include "app.crawlers.ENDPOINT_URL" (dict "current" . "default" $defaultJobConfigs) }}
                 - name: "AWS_DEFAULT_REGION"
                   value: {{ include "app.crawlers.AWS_DEFAULT_REGION" (dict "current" . "default" $defaultJobConfigs) }}
+              lifecycle:
+                postStart:
+                  exec: 
+                    command:
+                      - "/bin/sh"
+                      - -c
+                      - >
+                        if [ -s /tmp/certificates/cacert.pem ]; then
+                        /tmp/certificates/cacert.pem >> /usr/local/aws-cli/v2/current/dist/awscli/botocore/cacert.pem;
+                        fi;
               # command: 
               # - 
               # restartPolicy: {{ .restartPolicy }}
               volumeMounts:
                 - name: local_spider_list
                   mountPath: /etc/crawler_schedule
+                - name: certificates-configmap
+                  mountPath: /tmp/certificates
           volumes:
             - name: local_spider_list
               configMap:
                 name: crawlers-configmap
+            - name: certificates-configmap
+              configMap:
+                name: certificates-configmap
   successfulJobsHistoryLimit: 3
   suspend: false
 {{- end }}

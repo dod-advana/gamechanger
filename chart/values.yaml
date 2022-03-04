@@ -262,7 +262,7 @@ crawlers:
     repository: "advana/gamechanger/gamechanger-crawler"
     pullPolicy: Always
     tag: "latest"
-
+  
   defaultJobConfigs:
     # LOCAL_PREVIOUS_MANIFEST_LOCATION - directory where previous-manifest.json lives. defaults to cronjob's run_job.sh parent directory
     LOCAL_PREVIOUS_MANIFEST_LOCATION:
@@ -276,7 +276,11 @@ crawlers:
     UPLOAD_LOGS: "no"
     # S3_BASE_LOG_PATH_URL - base url for log bucket
     S3_BASE_LOG_PATH_URL: "s3://somebucket/someplace"
+    # ENDPOINT_URL - if not using AWS default S3 endpoint, then set to new url, ex: s3.minio.lab.boozallencsn.com
+    ENDPOINT_URL: "s3.lab.boozallencsn.com"
 
+  cacerts:
+    - "test123"
 
   cronJobs:
     - name: "crawler-sunday"
