@@ -164,7 +164,7 @@ Get the app ml secret name
 {{- if .Values.ml.existingSecret }}
     {{- printf "%s" (tpl .Values.ml.existingSecret $) -}}
 {{- else -}}
-    {{- printf "%s-secrets" (include "app.ml" .) -}}
+    {{- printf "%s-secret" (include "app.ml" .) -}}
 {{- end -}}
 {{- end -}}
 
@@ -176,7 +176,6 @@ Return true if a TLS secret object should be created
     {{- true -}}
 {{- end -}}
 {{- end -}}
-
 
 {{/*
 Return the secret containing app.ml TLS certificates
@@ -230,5 +229,35 @@ Return the path to the DH params file.
 {{- define "app.ml.tlsDHParams" -}}
 {{- if .Values.ml.tls.dhParamsFilename -}}
 {{- printf "/etc/nginx/tls/%s" .Values.ml.tls.dhParamsFilename -}}
+{{- end -}}
+{{- end -}}
+
+
+{{/*
+Return true if we should use an existingSecret. // if true, option 1 
+*/}}
+{{- define "app.crawlers.useExistingSecret" -}}
+{{- if .Values.crawlers.existingSecret -}}
+    {{- true -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Return true if a secret object should be created // if true, option 2 or 3
+*/}}
+{{- define "app.crawlers.createSecret" -}}
+{{- if not (include "app.crawlers.useExistingSecret" .) -}}
+    {{- true -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Get the app ml secret name
+*/}}
+{{- define "app.crawlers.secretName" -}}
+{{- if .Values.crawlers.existingSecret }}
+    {{- printf "%s" (tpl .Values.crawlers.existingSecret $) -}}
+{{- else -}}
+    {{- printf "%s-secret" (include "app.crawlers" .) -}}
 {{- end -}}
 {{- end -}}

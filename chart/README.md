@@ -1,14 +1,45 @@
-# gamechanger-uber chart
+# GAMECHANGER chart
+
+
 
 <!-- https://helm.sh/docs/topics/chart_repository/ -->
-## Components
+# Components
 - common
+- crawlers
 - ml
-- portal
+- neo4j
 - pipelines
+- portal
+- Third party/external components
+  - elasticsearch/AWS Opensearch
+  - kibana/(not applicable)
+  - postgres/AWS RDS Postgres
+  - redis/AWS Elasticache
+  - minio/AWS S3
 
+# Deploying GAMECHANGER
+In recognition of the various applicable use-cases, we've designed this chart to allow for integration with external service providers while also accomodating deployments into greenfield Kubernetes environments. The default `values.yaml` settings assume a greenfield deployment, and will deploy and configure all dependencies on the target cluster.
 
-## Templating Secrets
+To disable these third party components and configure external services, ensure `external{component-name}.*` settings are set to appropriate values while `{component-name}.enabled` is set to `false`. 
+
+## Minio/s3 settings
+- root user creds
+- bucket(s)
+- bucket(s) policies
+- user(s)
+- user(s) policies
+post install: 
+create group, attach policy, create user, add to group
+
+# GAMECHANGER `common` components 
+
+# GAMECHANGER `crawler` components 
+
+# GAMECHANGER `ml` components 
+
+# Templating Guide
+Below are recommended approaches to templating kubernetes resources within this chart. We draw inspiration from Bitnami's excellent Helm charts, adapting and customizing functions to fit this project's unique needs. 
+## Secrets
 Our priority when templating secret resources, including certificates, passwords, and other sensitive configuration material, should be to minimize the opportunity for exposing this data in plaintext. We'll also want to be flexible, as managing secrets should not be a burden for maintainers of this Helm Chart. Below we lay out recommended approaches for injecting secrets into k8s resources in this Helm Chart.
 
 ### Setting up `values.yaml` 
@@ -125,9 +156,4 @@ data:
 
 ```
 
-## Names 
-
-## Images 
-
-## Ingresses 
 
