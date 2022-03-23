@@ -240,7 +240,7 @@ pipelines:
 
 crawlers:
   # image - <Object>
-  #   Main app image details - also used to run all jobs defined in .Values
+  #   Main app image details - also used to run all jobs defined in .Values.crawlers.cronJobs
   image:
     registry: ""
     repository: "advana/gamechanger/gamechanger-crawler"
@@ -269,6 +269,26 @@ crawlers:
     repository: "advana/gamechanger/gamechanger-crawler"
     pullPolicy: Always
     tag: "latest"
+  
+  defaultJobConfigs:
+    # LOCAL_PREVIOUS_MANIFEST_LOCATION - directory where previous-manifest.json lives. defaults to cronjob's run_job.sh parent directory
+    LOCAL_PREVIOUS_MANIFEST_LOCATION:
+    # TEST_RUN - if "yes", then the only spider to be run is us_code_spider.py
+    TEST_RUN: "yes"
+    # SEND_NOTIFICATIONS - if "yes", then should send notification to slack channel. part of job_runner.sh wrapper and not implemented yet for cronjobs.
+    SEND_NOTIFICATIONS: "no"
+    # SLACK_HOOK_CHANNEL - name of slack channel to send notifications to. make sure to set env var SLACK_HOOK_URL in a secret ("SLACK_SECRETS"?)
+    SLACK_HOOK_CHANNEL: "#gc-alerts-dev"
+    # UPLOAD_LOGS - if "yes", then uploads local logs to s3 log bucket
+    UPLOAD_LOGS: "no"
+    # S3_BASE_LOG_PATH_URL - base url for log bucket
+    S3_BASE_LOG_PATH_URL: "s3://somebucket/someplace"
+    # ENDPOINT_URL - if not using AWS default S3 endpoint, then set to new url, ex: s3.minio.lab.boozallencsn.com
+    ENDPOINT_URL: "s3.lab.boozallencsn.com"
+
+  cacerts:
+    - "test123"
+
   cronJobs:
     - name: "crawler-sunday"
       schedule: "1 1 * * 0"

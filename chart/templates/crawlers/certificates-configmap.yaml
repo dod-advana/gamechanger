@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: "certificates-configmap"
+data:
+  cacerts.pem: |-
+  {{- range .Values.crawlers.cacerts }}
+    {{ . }}
+  {{- end }}
