@@ -1,0 +1,64 @@
+{{- if .Values.ml.init.job.enabled  }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  {{- /* initJobName changes every time the script runs. which forced existing jobs and pods to be deleted and thereby works around issue with helm upgrade refusing to modify existing job object */}}
+  name: {{ include "app.ml.initJobName" . }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: ml
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  template:
+    metadata:
+      annotations:
+        {{- with .Values.podAnnotations -}}{{- toYaml . | nindent 8 }}{{- end }}
+      labels:
+      {{- include "common.labels.standard" . | nindent 8 }}
+        role: ml
+        app.kubernetes.io/component: ml
+      {{- if .Values.commonLabels }}
+      {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "app.ml.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: init-scripts
+          image: {{ template "app.ml.init.job.image" . }}
+          imagePullPolicy: {{ .Values.ml.image.pullPolicy }}
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              {{- .Values.ml.init.job.script | trim | nindent 16 }}
+          {{- with .Values.appContainerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            - name: APP_VERSION
+              value: {{ default "1.0.0" .Chart.AppVersion | quote }}
+          {{- if .Values.ml.extraEnvVars }}
+            {{- include "common.tplvalues.render" ( dict "value" .Values.ml.extraEnvVars "context" $ ) | nindent 12 }}
+          {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "app.ml.configMapName" .  | quote }}
+            {{- if .Values.ml.extraEnvVarsCM }}
+            - configMapRef:
+                name: {{ include "common.tplvalues.render" ( dict "value" .Values.ml.extraEnvVarsCM "context" $ ) }}
+            {{- end }}
+            {{- if .Values.ml.extraEnvVarsSecret }}
+            - secretRef:
+                name: {{ include "common.tplvalues.render" ( dict "value" .Values.ml.extraEnvVarsSecret "context" $ ) }}
+            {{- end }}
+      restartPolicy: Never
+{{- end }}

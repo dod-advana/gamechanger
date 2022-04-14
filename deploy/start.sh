@@ -5,7 +5,7 @@ set -o errexit
 SCRIPT_DIR="$(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 REPO_DIR="$(cd -- "${SCRIPT_DIR}/../" &> /dev/null && pwd)"
 DEPLOY_CONF="${SCRIPT_DIR}/deploy.conf.sh"
-
+# aws ecr get-login-password | docker login --username AWS --password-stdin 092912502985.dkr.ecr.us-east-1.amazonaws.com
 source "$DEPLOY_CONF"
 
 function main() {

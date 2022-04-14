@@ -1,0 +1,35 @@
+apiVersion: v2
+name: GAMECHANGER
+description: The über Helm Chart for the GAMECHANGER application
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+# maintainers:
+#   - email: containers@bitnami.com
+#     name: Bitnami
+dependencies:
+  # https://helm.sh/docs/topics/charts/#using-the-child-parent-format
+  - condition: elasticsearch.asSubchart
+    name: elasticsearch
+    repository: https://charts.bitnami.com/bitnami
+    version: 17.x.x
+  - condition: kibana.asSubchart
+    name: kibana
+    repository: https://charts.bitnami.com/bitnami
+    version: 9.x.x
+  - condition: postgresql.asSubchart
+    name: postgresql
+    repository: https://charts.bitnami.com/bitnami
+    version: 11.x.x
+  - condition: redis.asSubchart
+    name: redis
+    repository: https://charts.bitnami.com/bitnami
+    version: 16.8.5
+  - condition: minio.asSubchart
+    name: minio
+    repository: https://charts.min.io/
+    version: 3.x.x
+  # - condition: neo4j.enabled
+  #   name: neo4j
+  #   repository: https://helm.neo4j.com/neo4j
+  #   version:

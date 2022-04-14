@@ -1,0 +1,112 @@
+# using the Dockerfile found in gamechanger-crawlers/dataPipelines/paasJobs/docker/
+# values.yaml should have crawler.cronjob.crons array of crawlers to run with schedule, name, id, scriptFile etc.
+{{- $defaultImage := include "app.crawlers.default.image" . }}
+{{- $defaultJobConfigs := $.Values.crawlers.defaultJobConfigs }}
+{{- range .Values.crawlers.cronJobs }}
+---
+apiVersion: {{ include "common.capabilities.cronjob.apiVersion" $ }}
+kind: CronJob
+metadata:
+  namespace: {{ $.Release.Namespace }}
+  name: {{ .name }}
+spec:
+  concurrencyPolicy: "Allow"
+  failedJobsHistoryLimit: 1
+  schedule: {{ .schedule }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          # init container to pull latest aws-cli cacerts.pem and combine with
+          # configmap's cacerts.pem, then store in /tmp directory as shared volume with
+          # the cronjob containers
+          initContainers:
+            - name: append-certs
+              image: amazon/aws-cli
+              command:
+                - /bin/sh
+                - -c
+                - cat 
+                - /etc/certificates/cacert.pem
+                - /usr/local/aws-cli/v2/current/dist/awscli/botocore/cacert.pem
+                - ">"
+                - /tmp/certificates/cacert.pem
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp/certificates
+                - name: certificates-configmap
+                  mountPath: /etc/certificates
+          containers:
+            - name: {{ .name }}-cronjob
+              image: {{ template "app.crawlers.image" (dict "current" . "default" $defaultImage) }}
+              env:
+                  # TODO: remove limitations for thread passed to the script/container and let pod handle max resources
+                - name: "MAX_PARSER_THREADS"
+                  value: {{ .parser_threads | default 68 | int }}
+                - name: "MAX_OCR_THREADS_PER_FILE"
+                  value: {{ .max_ocr_threads | default 1 | int }}
+                - name: "SKIP_NEO4J_UPDATE"
+                  value: {{ .skip_neo4j | default "no" | quote}}
+                - name: "LOCAL_SPIDER_LIST_FILE"
+                  value: "/etc/crawler_schedule/{{ .name }}.txt"
+                - name: "JOB_NAME"
+                  value: {{ .name | quote }}
+                  # LOCAL_DOWNLOAD_DIRECTORY_PATH: where downloaded files will be placed on local disk (not counting all temporary files in other dir)
+                  # should be some non-temporary, absolute, local download path
+                - name: "LOCAL_DOWNLOAD_DIRECTORY_PATH" 
+                  value: {{ include "app.crawlers.LOCAL_DOWNLOAD_DIRECTORY_PATH" (dict "current" . "default" $defaultJobConfigs) | quote }}
+                  # PYTHON_CMD: path to python binary in the venv suitable for this script
+                  # .. by default, job runs in a container where all packages are installed at system-level
+                - name: "PYTHON_CMD"
+                  value: {{ include "app.crawlers.PYTHON_CMD" (dict "current" . "default" $defaultJobConfigs) }}
+                - name: "LOCAL_PREVIOUS_MANIFEST_LOCATION"
+                  value: {{ include "app.crawlers.LOCAL_PREVIOUS_MANIFEST_LOCATION" (dict "current" . "default" $defaultJobConfigs) }}
+                - name: "TEST_RUN"
+                  value: {{ include "app.crawlers.TEST_RUN" (dict "current" . "default" $defaultJobConfigs) }}
+                  # Variables below for slack notification config - used in job_runner.sh
+                  # Could move to a configmap and include using envFrom, slack hook URL should also be secret
+                - name: "SEND_NOTIFICATIONS"
+                  value: {{ include "app.crawlers.SEND_NOTIFICATIONS" (dict "current" . "default" $defaultJobConfigs) }}
+                - name: "SLACK_HOOK_CHANNEL"
+                  value: {{ include "app.crawlers.SLACK_HOOK_CHANNEL" (dict "current" . "default" $defaultJobConfigs) }}
+                - name: "SLACK_HOOK_URL"
+                  valueFrom:
+                    secretKeyRef:
+                      name: "SLACK_SECRETS"
+                      key: "SLACK_HOOK_URL_SECRET"
+                - name: "UPLOAD_LOGS"
+                  value: {{ include "app.crawlers.UPLOAD_LOGS" (dict "current" . "default" $defaultJobConfigs) }}
+                - name: "S3_BASE_LOG_PATH_URL"
+                  value: {{ include "app.crawlers.S3_BASE_LOG_PATH_URL" (dict "current" . "default" $defaultJobConfigs) }}
+                - name: "ENDPOINT_URL"
+                  value: {{ include "app.crawlers.ENDPOINT_URL" (dict "current" . "default" $defaultJobConfigs) }}
+                - name: "AWS_DEFAULT_REGION"
+                  value: {{ include "app.crawlers.AWS_DEFAULT_REGION" (dict "current" . "default" $defaultJobConfigs) }}
+              lifecycle:
+                postStart:
+                  exec: 
+                    command:
+                      - "/bin/sh"
+                      - -c
+                      - >
+                        if [ -s /tmp/certificates/cacert.pem ]; then
+                        /tmp/certificates/cacert.pem >> /usr/local/aws-cli/v2/current/dist/awscli/botocore/cacert.pem;
+                        fi;
+              # command: 
+              # - 
+              # restartPolicy: {{ .restartPolicy }}
+              volumeMounts:
+                - name: local_spider_list
+                  mountPath: /etc/crawler_schedule
+                - name: certificates-configmap
+                  mountPath: /tmp/certificates
+          volumes:
+            - name: local_spider_list
+              configMap:
+                name: crawlers-configmap
+            - name: certificates-configmap
+              configMap:
+                name: certificates-configmap
+  successfulJobsHistoryLimit: 3
+  suspend: false
+{{- end }}

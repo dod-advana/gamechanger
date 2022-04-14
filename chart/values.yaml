@@ -1,0 +1,1021 @@
+## @section Global parameters
+## Global parameters
+## Please, note that this will override parameters, including dependencies, configured to use the global value
+## Current available global parameters: imageRegistry, imagePullSecrets and storageClass
+
+global:
+  imageRegistry: ""
+  ## E.g.
+  ## imagePullSecrets:
+  ##   - myRegistryKeySecretName
+  ##
+  imagePullSecrets: []
+  storageClass: ""
+
+  ## @param global.postgresql.postgresqlDatabase PostgreSQL database (overrides `postgresqlDatabase`)
+  ## @param global.postgresql.postgresqlUsername PostgreSQL username (overrides `postgresqlUsername`)
+  ## @param global.postgresql.existingSecret Name of existing secret to use for PostgreSQL passwords (overrides `existingSecret`)
+  ## @param global.postgresql.postgresqlPassword PostgreSQL admin password (overrides `postgresqlPassword`)
+  ## @param global.postgresql.servicePort PostgreSQL port (overrides `service.port`
+  ## @param global.postgresql.replicationPassword Replication user password (overrides `replication.password`)
+  ##
+  postgresql:
+    postgresqlDatabase: ""
+    postgresqlUsername: ""
+    existingSecret: ""
+    postgresqlPassword: ""
+    servicePort: ""
+    replicationPassword: ""
+
+## @section Common parameters
+##
+# @param external DNS subdomain; will be used to build sub-components FQDNs and configure CORS
+externalSubDomain: "" # "dev.advana.boozallencsn.com"
+
+## @param nameOverride String to partially override common.names.fullname template (will maintain the release name)
+##
+nameOverride: ""
+## @param fullnameOverride String to fully override common.names.fullname template
+##
+fullnameOverride: ""
+## @param clusterDomain Kubernetes cluster domain
+##
+clusterDomain: cluster.local
+## @param extraDeploy Array of extra objects to deploy with the release (evaluated as a template)
+##
+extraDeploy: []
+## @param commonLabels Add labels to all the deployed resources
+##
+commonLabels: {}
+## @param commonAnnotations Add annotations to all the deployed resources
+##
+commonAnnotations: {}
+
+## Enable diagnostic mode throughout the application
+##
+diagnosticMode:
+  ## @param diagnosticMode.enabled Enable diagnostic mode (all probes will be disabled and the command will be overridden)
+  ##
+  enabled: false
+  ## @param diagnosticMode.command Command to override all containers in the deployment
+  ##
+  command:
+    - sleep
+  ## @param diagnosticMode.args Args to override all containers in the deployment
+  ##
+  args:
+    - infinity
+
+ml:
+  # image - <Object>
+  #   Main app image details - also used to run all jobs defined in .Values
+  image:
+    registry: ""
+    repository: "advana/gamechanger/gamechanger-ml"
+    pullPolicy: Always
+    tag: "latest"
+
+  # replicaCount - <Integer >= 1>
+  #   Number of app pod replicas to launch in the load-balancing group.
+  #
+  #   Tips:
+  #   - when troubleshooting, set to 1 to avoid dealing with complications of load-balanced traffic
+  replicaCount: 1
+
+  existingConfigMap: ""
+
+  updateStrategy:
+    type: RollingUpdate
+
+  # startCommand - <Array of strings>
+  #   Entrypoint/command to be executed by the main application pod.
+  #   Will completely override any entrypoint/cmd baked into the container.
+  #
+  #   Tips:
+  #     - when troubleshooting, set to ["sleep", "infinity"] then exec into container and tweak/relaunch app as necessary
+  startCommand:
+    - "/bin/bash"
+    - "./gamechangerml/api/fastapi/startFast.sh"
+  init:
+    # runs every time ml container is restarted
+    container:
+      enabled: true
+      image:
+        registry: ""
+        repository: "advana/gamechanger/gamechanger-ml"
+        tag: "latest"
+      script: |
+        echo test
+    # runs once per chart release as a k8s job
+    job:
+      enabled: true
+      image:
+        registry: ""
+        repository: "advana/gamechanger/gamechanger-ml"
+        tag: "latest"
+      script: |
+        echo test
+
+  # probes - <Object>
+  #   Probes for determining pod/container health, as per ...
+  #   https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+  #
+  #   Tips:
+  #     - if troubleshooting, set to empty object {}; to avoid k8s restarting container and blocking traffic to it
+  probes: {}
+
+  # podAnnotations - <Object>  additional pod annotations
+  podAnnotations:
+    iam.amazonaws.com/role: advana/k8s/s3.wildcard
+
+  # service - <Object/Map>
+  #   Port details of the service used to open application pod to connections from outside.
+  #   Note: must be of type NodePort and only http/https keys are supported.
+  #   For syntax, refer to service.spec.ports[*] definitions of the NodePort service https://kubernetes.io/docs/concepts/services-networking/service/#nodeport
+  service:
+    type: NodePort # ClusterIP
+    ports:
+      http: 5000
+      https: 443
+    nodePorts:
+      http: 31009
+      https: 31209
+    extraPorts:
+      []
+      # - port: 443
+      #   targetPort: 8443
+      #   nodePort: 31209
+      #   protocol: TCP
+      #   name: https
+
+  # podSecurityContext - <Object>
+  #   Sets security context for main application and job pods.
+  #   This primarily comes into play when mounting files and volumes, but has other uses.
+  #   For more on what goes in here, reference https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
+  podSecurityContext:
+    fsGroup: 1001
+    fsGroupChangePolicy: "OnRootMismatch"
+
+  # appContainerSecurityContext - <Map>
+  #   Security context for app and job containers.
+  #   It's useful to define this to match user-id and group-id of the application and its' files inside container
+  #   For more on what goes in here, reference https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container
+  appContainerSecurityContext:
+    runAsUser: 1001
+    runAsGroup: 1001
+
+  # serviceAccount - <Map>
+  #   Config of service account to be used by the app and job pods
+  #   Service account determines what permissions pods/resources have when they interact with other k8s resources & API's
+  serviceAccount:
+    # create - <bool> - whether to attempt creating the service account
+    create: true
+    # name - <string> - override with custom name. useful if there is a pre-existing service account you should be using
+    name: ""
+
+  # resources - <Map>
+  #   Defines minimum and maximum cpu/memory requirements for each application pod (except one-time-job pods)
+  #   For more on what goes in here, reference https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  resources:
+    requests:
+      memory: "20Gi"
+      cpu: "4"
+
+  # extraEnvVars - An array to add extra environment variables
+  extraEnvVars: []
+  # extraEnvVarsSecret - existing Secret with extra environment variables
+  extraEnvVarsSecret: ""
+  # extraEnvVarsCM - existing ConfigMap with extra environment variables
+  extraEnvVarsCM: ""
+  # podTolerations - <Array[Map[string, string]]>
+  #   Pod tolerations. Used to make sure pod runs on nodes that are specifically tainted to prevent other pods from
+  #   scheduling there by default. Reference https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  podTolerations:
+    - key: "HighMemory"
+      operator: "Equal"
+      effect: "NoExecute"
+      value: "true"
+
+  # httpsProxy - <Map>
+  #   Configuration of the https proxy sidecar
+  httpsProxy:
+    enabled: true
+    image:
+      repository: registry1.dso.mil/ironbank/opensource/nginx/nginx
+      tag: "1.21.1"
+      pullPolicy: IfNotPresent
+    existingConfigMap: ""
+    sslCiphers: "HIGH:!aNULL:!eNULL:!MD5"
+    sslProtocols: "TLSv1.2 TLSv1.3"
+    containerPort: 8443
+    securityContext:
+      runAsUser: 998
+      runAsGroup: 996
+
+  tls:
+    enabled: true
+    # auto-generate tls bundle completely
+    autoGenerated: true
+    # provide an existing secret with {tls.key, ca.crt, tls.crt} keys defined
+    existingSecret: ""
+    # if no existing secret, these should be set and mounted
+    # Certificate file on ML container(s)
+    certFilename: "tls.crt"
+    # Path to cert's key file on ML container(s)
+    certKeyFilename: "tls.key"
+    # Path to CA certificate file on ML container(s)
+    certCAFilename: "ca.crt"
+    #
+    dhParamsFileName: ""
+
+web:
+  replicaCount: 1
+  # service - <Object/Map>
+  #   Port details of the service used to open application pod to connections from outside.
+  #   Note: must be of type NodePort and only http/https keys are supported.
+  #   For syntax, refer to service.spec.ports[*] definitions of the NodePort service https://kubernetes.io/docs/concepts/services-networking/service/#nodeport
+  service:
+    type: NodePort # ClusterIP
+    ports:
+      http: 5000
+      https: 443
+    nodePorts:
+      http: 31009
+      https: 31209
+    extraPorts:
+      []
+      # - port: 443
+      #   targetPort: 8443
+      #   nodePort: 31209
+      #   protocol: TCP
+      #   name: https
+  httpsProxy:
+    enabled: true
+    image:
+      repository: registry1.dso.mil/ironbank/opensource/nginx/nginx
+      tag: "1.21.1"
+      pullPolicy: IfNotPresent
+    existingConfigMap: ""
+    sslCiphers: "HIGH:!aNULL:!eNULL:!MD5"
+    sslProtocols: "TLSv1.2 TLSv1.3"
+    containerPort: 8443
+    securityContext:
+      runAsUser: 998
+      runAsGroup: 996
+  tls:
+    enabled: true
+    autoGenerate: true
+    existingSecret: ""
+
+  # extraEnvVars - An array to add extra environment variables
+  extraEnvVars: []
+  # extraEnvVarsSecret - existing Secret with extra environment variables
+  extraEnvVarsSecret: ""
+  # extraEnvVarsCM - existing ConfigMap with extra environment variables
+  extraEnvVarsCM: ""
+  # podTolerations - <Array[Map[string, string]]>
+  #   Pod tolerations. Used to make sure pod runs on nodes that are specifically tainted to prevent other pods from
+  #   scheduling there by default. Reference https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  podTolerations:
+    - key: "HighMemory"
+      operator: "Equal"
+      effect: "NoExecute"
+      value: "true"
+  image:
+    registry: "092912502985.dkr.ecr.us-east-1.amazonaws.com"
+    repository: "gc-web"
+    tag: "latest"
+  startCommand:
+    - "/bin/bash"
+    - "./gamechangerml/api/fastapi/startFast.sh"
+  init:
+    # runs every time web container is restarted
+    container:
+      enabled: true
+      image:
+        registry: ""
+        repository: "advana/gamechanger/gamechanger-web"
+        tag: "latest"
+      script: |
+        echo test
+    # runs once per chart release as a k8s job
+    job:
+      enabled: true
+      image:
+        registry: ""
+        repository: "advana/gamechanger/gamechanger-web"
+        tag: "latest"
+      script: |
+        echo test
+pipelines:
+  image:
+    registry: "092912502985.dkr.ecr.us-east-1.amazonaws.com"
+    repository: "gc-data-pipelines"
+    tag: "latest"
+
+crawlers:
+  # image - <Object>
+  #   Main app image details - also used to run all jobs defined in .Values.crawlers.cronJobs
+  image:
+    registry: ""
+    repository: "advana/gamechanger/gamechanger-crawler"
+    pullPolicy: Always
+    tag: "latest"
+
+  # replicaCount - <Integer >= 1>
+  #   Number of app pod replicas to launch in the load-balancing group.
+  #
+  #   Tips:
+  #   - when troubleshooting, set to 1 to avoid dealing with complications of load-balanced traffic
+  replicaCount: 1
+
+  updateStrategy:
+    type: RollingUpdate
+  ## @param crawlers.existingSecret Permits specifying a secret name for crawler configuration. Should include {}
+  existingSecret: ""
+  slackWebhook:
+    enabled: false
+    ## NOTE: Slack webhook URLs should be considered sensitive as any POST requests will be forawrded without auth
+    url: ""
+    channel: ""
+
+  defaultCronJobImage:
+    registry: ""
+    repository: "advana/gamechanger/gamechanger-crawler"
+    pullPolicy: Always
+    tag: "latest"
+
+  defaultJobConfigs:
+    # LOCAL_PREVIOUS_MANIFEST_LOCATION - directory where previous-manifest.json lives. defaults to cronjob's run_job.sh parent directory
+    LOCAL_PREVIOUS_MANIFEST_LOCATION:
+    # TEST_RUN - if "yes", then the only spider to be run is us_code_spider.py
+    TEST_RUN: "yes"
+    # SEND_NOTIFICATIONS - if "yes", then should send notification to slack channel. part of job_runner.sh wrapper and not implemented yet for cronjobs.
+    SEND_NOTIFICATIONS: "no"
+    # SLACK_HOOK_CHANNEL - name of slack channel to send notifications to. make sure to set env var SLACK_HOOK_URL in a secret ("SLACK_SECRETS"?)
+    SLACK_HOOK_CHANNEL: "#gc-alerts-dev"
+    # UPLOAD_LOGS - if "yes", then uploads local logs to s3 log bucket
+    UPLOAD_LOGS: "no"
+    # S3_BASE_LOG_PATH_URL - base url for log bucket
+    S3_BASE_LOG_PATH_URL: "s3://somebucket/someplace"
+    # ENDPOINT_URL - if not using AWS default S3 endpoint, then set to new url, ex: s3.minio.lab.boozallencsn.com
+    ENDPOINT_URL: "s3.lab.boozallencsn.com"
+
+  cacerts:
+    - "test123"
+
+  cronJobs:
+    - name: "crawler-sunday"
+      schedule: "1 1 * * 0"
+      crawlerIDs:
+        - sorn_spider
+        - secnav_spider
+        - coast_guard_spider
+        - omb_pubs_spider
+        - dcma_spider
+    - name: "crawler-monday"
+      schedule: "1 1 * * 1"
+      crawlerIDs:
+        - legislation_spider
+        - chief_national_guard_bureau_spider
+        - ic_policies_spider
+        - stig_spider
+        - tradoc_spider
+    - name: "crawler-tuesday"
+      schedule: "1 1 * * 2"
+      crawlerIDs:
+        - army_pubs_spider
+        - cfr_spider
+        - us_code_spider
+        - dha_spider
+        - cnss_spider
+    - name: "crawler-wednesday"
+      schedule: "1 1 * * 3"
+      crawlerIDs:
+        - executive_orders_spider
+        - fasab_spider
+        - dod_coronavirus_spider
+        - navy_med_spider
+    - name: "crawler-thursday"
+      schedule: "1 1 * * 4"
+      crawlerIDs:
+        - marine_corp_spider
+        - milpersman_spider
+        - bupers_spider
+        - dfars_pgi_spider
+    - name: "crawler-friday"
+      schedule: "1 1 * * 5"
+      crawlerIDs:
+        - air_force_spider
+        - nato_spider
+        - navy_reserve_spider
+        - jcs_pubs_spider
+        - army_reserve_spider
+    # saturday
+    - name: "crawler-saturday"
+      schedule: "1 1 * * 6"
+      crawlerIDs:
+        - dod_issuances_spider
+        - dfar_subpart_regs_spider
+        - fmr_spider
+        - far_subpart_regs_spider
+
+    # # # schedule sets the same frequency for all crons
+    # schedule: "30 2 * * *"
+    #   crons: # []
+    #     - name: job1
+    #       image:
+    #         registry: ""
+    #         repository: "advana/gamechanger/gamechanger-crawler-test"
+    #         tag: "latest"
+    #       imagePullPolicy: "Always"
+    #       # crawlerID has to be an existing .py script
+    #       crawlerID: "executive_orders_spider"
+    #       restartPolicy: "OnFailure"
+
+neo4j: {}
+
+##########################################
+# External/dependency charts #
+##########################################
+elasticsearch:
+  asSubchart: true
+  name: gamechanger
+  hosts: []
+  port: ""
+
+  extraConfig: {}
+  ingress:
+    enabled: false
+  security:
+    enabled: true
+    fipsMode: true
+    tls:
+      autoGenerated: true
+      # if not autogenerated, or not using subchart, set this to the filename in ./certs/ with the elasticearch CA pem
+      certCAFilename: "ca.crt"
+  master:
+    podSecurityContext:
+      enabled: true
+  coordinating:
+    podSecurityContext:
+      enabled: true
+  data:
+    persistence:
+      size: 20Gi
+    podSecurityContext:
+      enabled: true
+
+kibana:
+  enabled: false
+  # image:
+  #   registry: ""
+  #   repository: "kibana"
+  #   tag: "7.10.1"
+
+## @section PostgreSQL Parameters
+
+## PostgreSQL chart configuration
+## ref: https://github.com/bitnami/charts/blob/master/bitnami/postgresql/values.yaml
+## @param postgresql.enabled If external database is used, set it to `false`
+## @param postgresql.nameOverride String to partially override common.names.fullname template with a string (will prepend the release name)
+## @param postgresql.postgresqlUsername Postgresql username
+## @param postgresql.postgresqlPassword Postgresql password
+## @param postgresql.existingSecret Set Postgresql password via an existing secret
+## @param postgresql.postgresqlExtendedConf [object] Extended runtime config parameters (appended to main or default configuration)
+## @param postgresql.replication.enabled Enable replicated postgresql
+## @param postgresql.persistence.enabled Enable persistence for PostgreSQL
+##
+postgresql:
+  asSubchart: true
+  nameOverride: ""
+  ## Name of existing secret to use for PostgreSQL passwords.
+  ## If an existingSecret is used it will overwrite postgresqlUsername and postgresqlPassword.
+  ## The secret has to contain at least the key postgresql-postgres-password.
+  ##
+  ## Example Secret:
+  ## apiVersion: v1
+  ## kind: Secret
+  ## metadata:
+  ##   name: mysecret
+  ## type: Opaque
+  ## data:
+  ##   postgresqlUsername: YWRtaW4=
+  ##   postgresqlPassword: MWYyZDFlMmU2N2Rm
+  existingSecret: ""
+  postgresqlExtendedConf:
+    maxConnections: 1024
+  replication:
+    enabled: true
+  persistence:
+    enabled: true
+  ## @param postgresql.initdbScripts [object] Initdb scripts to create databases
+  ##
+  initdbScripts:
+    test.sql: |
+      CREATE DATABASE test;
+      CREATE USER server;
+      alter user server with encrypted password 'password';
+      GRANT ALL PRIVILEGES ON DATABASE test TO server;
+
+redis:
+  # @param redis.asSubchart If external redis is used, set it to `false`
+  ##
+  asSubchart: true
+
+  hosts: []
+  port: ""
+
+  ## @param redis.nameOverride String to partially override common.names.fullname template with a string (will prepend the release name)
+  ##
+  nameOverride: ""
+  ## image:
+  ##   tag:
+  auth:
+    ## @param redis.auth.enabled Use redis password
+    ##
+    enabled: true
+    ## @param redis.auth.password Redis password
+    ## Defaults to a random 10-character alphanumeric string if not set and auth.enabled is true.
+    ## It should always be set using the password value or in the existingSecret to avoid issues
+    ## with the app.
+    ## The password value is ignored if existingSecret is set
+    password: ""
+  ## @param redis.architecture Cluster settings
+  ##
+  architecture: replication
+  ## Redis&trade; Master parameters
+  ## @param redis.master.persistence.enabled Enable persistence for master Redis
+  ##
+  master:
+    persistence:
+      enabled: true
+    ## @param redis.master.priorityClassName Redis pods Priority Class Name
+    ## ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass
+    ##
+    priorityClassName: ""
+  ## Redis&trade; Replica parameters
+  ## @param redis.replica.persistence.enabled Enable persistence for replica Redis
+  ##
+  replica:
+    persistence:
+      enabled: true
+
+minio:
+  asSubchart: true
+  ## Provide a name in place of minio for `app:` labels
+  ##
+  nameOverride: ""
+
+  ## Provide a name to substitute for the full names of resources
+  ##
+  fullnameOverride: ""
+
+  ## set kubernetes cluster domain where minio is running
+  ##
+  clusterDomain: lab.internal #cluster.local
+
+  ## Set default image, imageTag, and imagePullPolicy. mode is used to indicate the
+  ##
+  image:
+    repository: quay.io/minio/minio
+    tag: RELEASE.2021-12-29T06-49-06Z
+    pullPolicy: IfNotPresent
+
+  imagePullSecrets: []
+  # - name: "image-pull-secret"
+
+  ## Set default image, imageTag, and imagePullPolicy for the `mc` (the minio
+  ## client used to create a default bucket).
+  ##
+  mcImage:
+    repository: quay.io/minio/mc
+    tag: RELEASE.2021-12-29T06-52-55Z
+    pullPolicy: IfNotPresent
+
+  ## minio mode, i.e. standalone or distributed or gateway.
+  mode: distributed ## other supported values are "standalone", "gateway"
+
+  ## Additional labels to include with deployment or statefulset
+  additionalLabels: []
+
+  ## Additional annotations to include with deployment or statefulset
+  additionalAnnotations: []
+
+  ## Additional arguments to pass to minio binary
+  extraArgs: []
+
+  ## Port number for MinIO S3 API Access
+  minioAPIPort: "9000"
+
+  ## Port number for MinIO Browser COnsole Access
+  minioConsolePort: "9001"
+
+  ## Update strategy for Deployments
+  DeploymentUpdate:
+    type: RollingUpdate
+    maxUnavailable: 0
+    maxSurge: 100%
+
+  ## Update strategy for StatefulSets
+  StatefulSetUpdate:
+    updateStrategy: RollingUpdate
+
+  ## Pod priority settings
+  ## ref: https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/
+  ##
+  priorityClassName: ""
+
+  ## Set default rootUser, rootPassword
+  ## AccessKey and secretKey is generated when not set
+  ## Distributed MinIO ref: https://docs.minio.io/docs/distributed-minio-quickstart-guide
+  ##
+  rootUser: ""
+  rootPassword: ""
+
+  ## Use existing Secret that store following variables:
+  ##
+  ## | Chart var             | .data.<key> in Secret    |
+  ## |:----------------------|:-------------------------|
+  ## | rootUser              | rootUser                 |
+  ## | rootPassword          | rootPassword             |
+  ##
+  ## All mentioned variables will be ignored in values file.
+  ## .data.rootUser and .data.rootPassword are mandatory,
+  ## others depend on enabled status of corresponding sections.
+  existingSecret: ""
+
+  ## Directory on the MinIO pof
+  certsPath: "/etc/minio/certs/"
+  configPathmc: "/etc/minio/mc/"
+
+  ## Path where PV would be mounted on the MinIO Pod
+  mountPath: "/export"
+  ## Override the root directory which the minio server should serve from.
+  ## If left empty, it defaults to the value of {{ .Values.mountPath }}
+  ## If defined, it must be a sub-directory of the path specified in {{ .Values.mountPath }}
+  ##
+  bucketRoot: ""
+
+  # Number of drives attached to a node
+  drivesPerNode: 1
+  # Number of MinIO containers running
+  replicas: 4
+  # Number of expanded MinIO clusters
+  pools: 1
+
+  # Deploy if 'mode == gateway' - 4 replicas.
+  gateway:
+    type: "nas" # currently only "nas,gcs" are supported.
+    replicas: 4
+    gcs:
+      serviceAccountFile: "" # credential JSON file of service account key (not required if using existing secret)
+      projectId: "" # Google cloud project id required
+
+  ## TLS Settings for MinIO
+  tls:
+    enabled: false
+    ## Create a secret with private.key and public.crt files and pass that here. Ref: https://github.com/minio/minio/tree/master/docs/tls/kubernetes#2-create-kubernetes-secret
+    certSecret: ""
+    publicCrt: public.crt
+    privateKey: private.key
+
+  ## Trusted Certificates Settings for MinIO. Ref: https://docs.minio.io/docs/how-to-secure-access-to-minio-server-with-tls#install-certificates-from-third-party-cas
+  ## Bundle multiple trusted certificates into one secret and pass that here. Ref: https://github.com/minio/minio/tree/master/docs/tls/kubernetes#2-create-kubernetes-secret
+  ## When using self-signed certificates, remember to include MinIO's own certificate in the bundle with key public.crt.
+  ## If certSecret is left empty and tls is enabled, this chart installs the public certificate from .Values.tls.certSecret.
+  trustedCertsSecret: ""
+
+  ## Enable persistence using Persistent Volume Claims
+  ## ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
+  ##
+  persistence:
+    enabled: true
+    annotations: {}
+
+    ## A manually managed Persistent Volume and Claim
+    ## Requires persistence.enabled: true
+    ## If defined, PVC must be created manually before volume will be bound
+    existingClaim: ""
+
+    ## minio data Persistent Volume Storage Class
+    ## If defined, storageClassName: <storageClass>
+    ## If set to "-", storageClassName: "", which disables dynamic provisioning
+    ## If undefined (the default) or set to null, no storageClassName spec is
+    ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+    ##   GKE, AWS & OpenStack)
+    ##
+    ## Storage class of PV to bind. By default it looks for standard storage class.
+    ## If the PV uses a different storage class, specify that here.
+    storageClass: ""
+    VolumeName: ""
+    accessMode: ReadWriteOnce
+    size: 500Gi
+
+    ## If subPath is set mount a sub folder of a volume instead of the root of the volume.
+    ## This is especially handy for volume plugins that don't natively support sub mounting (like glusterfs).
+    ##
+    subPath: ""
+
+  ## Expose the MinIO service to be accessed from outside the cluster (LoadBalancer service).
+  ## or access it from within the cluster (ClusterIP service). Set the service type and the port to serve it.
+  ## ref: http://kubernetes.io/docs/user-guide/services/
+  ##
+  service:
+    type: ClusterIP
+    clusterIP: ~
+    ## Make sure to match it to minioAPIPort
+    port: "9000"
+    nodePort: 32000
+
+  ## Configure Ingress based on the documentation here: https://kubernetes.io/docs/concepts/services-networking/ingress/
+  ##
+
+  ingress:
+    enabled: false
+    # ingressClassName: ""
+    labels:
+      {}
+      # node-role.kubernetes.io/ingress: platform
+    annotations:
+      {}
+      # cert-manager.io/cluster-issuer: ""
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+      # kubernetes.io/ingress.allow-http: "false"
+      # kubernetes.io/ingress.global-static-ip-name: ""
+      # nginx.ingress.kubernetes.io/secure-backends: "true"
+      # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+      # nginx.ingress.kubernetes.io/whitelist-source-range: 0.0.0.0/0
+    path: /
+    hosts: []
+    tls:
+      - secretName: minio-ingress-tls
+        hosts: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+
+  consoleService:
+    type: ClusterIP
+    clusterIP: ~
+    ## Make sure to match it to minioConsolePort
+    port: "9001"
+    nodePort: 32001
+
+  consoleIngress:
+    enabled: true
+    # ingressClassName: ""
+    labels:
+      {}
+      # node-role.kubernetes.io/ingress: platform
+
+    annotations:
+      {}
+      # cert-manager.io/cluster-issuer: ""
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+      # kubernetes.io/ingress.allow-http: "false"
+      # kubernetes.io/ingress.global-static-ip-name: ""
+      # nginx.ingress.kubernetes.io/secure-backends: "true"
+      # nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+      # nginx.ingress.kubernetes.io/whitelist-source-range: 0.0.0.0/0
+    path: /
+    hosts: []
+    tls:
+      - secretName: minio-console-ingress-tls
+        hosts: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+
+  ## Node labels for pod assignment
+  ## Ref: https://kubernetes.io/docs/user-guide/node-selection/
+  ##
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  ## Add stateful containers to have security context, if enabled MinIO will run as this
+  ## user and group NOTE: securityContext is only enabled if persistence.enabled=true
+  securityContext:
+    enabled: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+
+  # Additational pod annotations
+  podAnnotations: {}
+
+  # Additional pod labels
+  podLabels: {}
+
+  ## Configure resource requests and limits
+  ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  ##
+  resources:
+    requests:
+      memory: 8Gi
+
+  ## List of policies to be created after minio install
+  ##
+  ## In addition to default policies [readonly|readwrite|writeonly|consoleAdmin|diagnostics]
+  ## you can define additional policies with custom supported actions and resources
+  policies: #[]
+    ## writeexamplepolicy policy grants creation or deletion of buckets with name
+    ## starting with example. In addition, grants objects write permissions on buckets starting with
+    ## example.
+    - name: gamechangerwrite
+      statements:
+        - resources:
+            - "arn:aws:s3:::gamechanger*/*"
+          actions:
+            - "s3:AbortMultipartUpload"
+            - "s3:GetObject"
+            - "s3:DeleteObject"
+            - "s3:PutObject"
+            - "s3:ListMultipartUploadParts"
+        - resources:
+            - "arn:aws:s3:::gamechanger*"
+          actions:
+            - "s3:CreateBucket"
+            - "s3:DeleteBucket"
+            - "s3:GetBucketLocation"
+            - "s3:ListBucket"
+            - "s3:ListBucketMultipartUploads"
+    ## readonlyexamplepolicy policy grants access to buckets with name starting with example.
+    ## In addition, grants objects read permissions on buckets starting with example.
+    - name: gamechangerreadonly
+      statements:
+        - resources:
+            - "arn:aws:s3:::gamechanger*/*"
+          actions:
+            - "s3:GetObject"
+        - resources:
+            - "arn:aws:s3:::gamechanger*"
+          actions:
+            - "s3:GetBucketLocation"
+            - "s3:ListBucket"
+            - "s3:ListBucketMultipartUploads"
+  ## Additional Annotations for the Kubernetes Job makePolicyJob
+  makePolicyJob:
+    podAnnotations:
+    annotations:
+    securityContext:
+      enabled: false
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+    resources:
+      requests:
+        memory: 128Mi
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+
+  ## List of users to be created after minio install
+  ##
+  users:
+    ## Username, password and policy to be assigned to the user
+    ## Default policies are [readonly|readwrite|writeonly|consoleAdmin|diagnostics]
+    ## Add new policies as explained here https://docs.min.io/docs/minio-multi-user-quickstart-guide.html
+    ## NOTE: this will fail if LDAP is enabled in your MinIO deployment
+    ## make sure to disable this if you are using LDAP.
+    - accessKey: gamechangerreadonly
+      secretKey: PLEASE-CHANGE-ME-1
+      policy: gamechangerreadonly
+    - accessKey: gamechangerwrite
+      secretKey: PLEASE-CHANGE-ME-2
+      policy: gamechangerwrite
+    # Or you can refer to specific secret
+    #- accessKey: externalSecret
+    #  existingSecret: my-secret
+    #  existingSecretKey: password
+    #  policy: readonly
+
+  ## Additional Annotations for the Kubernetes Job makeUserJob
+  makeUserJob:
+    podAnnotations:
+    annotations:
+    securityContext:
+      enabled: false
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+    resources:
+      requests:
+        memory: 128Mi
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+
+  ## List of buckets to be created after minio install
+  ##
+  buckets:
+    - name: gamechanger
+      policy: none
+      versioning: true
+    #   # Name of the bucket
+    # - name: bucket1
+    #   # Policy to be set on the
+    #   # bucket [none|download|upload|public]
+    #   policy: none
+    #   # Purge if bucket exists already
+    #   purge: false
+    #   # set versioning for
+    #   # bucket [true|false]
+    #   versioning: false
+    # - name: bucket2
+    #   policy: none
+    #   purge: false
+    #   versioning: true
+
+  ## Additional Annotations for the Kubernetes Job makeBucketJob
+  makeBucketJob:
+    podAnnotations:
+    annotations:
+    securityContext:
+      enabled: false
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+    resources:
+      requests:
+        memory: 128Mi
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+
+  ## List of command to run after minio install
+  ## NOTE: the mc command TARGET is always "myminio"
+  customCommands:
+    # - command: "admin policy set myminio consoleAdmin group='cn=ops,cn=groups,dc=example,dc=com'"
+
+  ## Additional Annotations for the Kubernetes Job customCommandJob
+  customCommandJob:
+    podAnnotations:
+    annotations:
+    securityContext:
+      enabled: false
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+    resources:
+      requests:
+        memory: 128Mi
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+
+  ## Use this field to add environment variables relevant to MinIO server. These fields will be passed on to MinIO container(s)
+  ## when Chart is deployed
+  environment:
+    ## Please refer for comprehensive list https://docs.min.io/minio/baremetal/reference/minio-server/minio-server.html
+    ## MINIO_SUBNET_LICENSE: "License key obtained from https://subnet.min.io"
+    ## MINIO_BROWSER: "off"
+
+  ## The name of a secret in the same kubernetes namespace which contain secret values
+  ## This can be useful for LDAP password, etc
+  ## The key in the secret must be 'config.env'
+  ##
+  # extraSecret: minio-extraenv
+
+  networkPolicy:
+    enabled: false
+    allowExternal: true
+
+  ## PodDisruptionBudget settings
+  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/disruptions/
+  ##
+  podDisruptionBudget:
+    enabled: false
+    maxUnavailable: 1
+
+  ## Specify the service account to use for the MinIO pods. If 'create' is set to 'false'
+  ## and 'name' is left unspecified, the account 'default' will be used.
+  serviceAccount:
+    create: true
+    ## The name of the service account to use. If 'create' is 'true', a service account with that name
+    ## will be created.
+    name: "minio-sa"
+
+  metrics:
+    serviceMonitor:
+      enabled: false
+      public: true
+      additionalLabels: {}
+      relabelConfigs: {}
+      # namespace: monitoring
+      # interval: 30s
+      # scrapeTimeout: 10s
+
+  ## ETCD settings: https://github.com/minio/minio/blob/master/docs/sts/etcd.md
+  ## Define endpoints to enable this section.
+  etcd:
+    endpoints: []
+    pathPrefix: ""
+    corednsPathPrefix: ""
+    clientCert: ""
+    clientCertKey: ""

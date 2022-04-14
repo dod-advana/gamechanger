@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.ml.configMapName" . }}
+  labels:
+  {{- include "common.labels.standard" . | nindent 4 }}
+  {{- if .Values.commonLabels }}
+  {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+  {{- end }}
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+  namespace: {{ .Release.Namespace }}
+data:
+  REDIS_HOST: {{ include "app.redis.host" . | quote }}
+  REDIS_PORT: {{ include "app.redis.port" . | quote }}
+  ES_HOST: {{ include "app.elasticsearch.host" . | quote }}
+  ES_ENABLE_SSL: {{ include "app.elasticsearch.port" . | quote }}
+  ES_ENABLE_AUTH: {{ include "app.elasticsearch.authEnabled" . | quote }}
+  ENV_TYPE: K8S_DEV
+  DOWNLOAD_DEP: "true"
+  CONTAINER_RELOAD: "false"
+  WORKERS_PER_CORE: 1
+  DOCKER_BUILDKIT: 1
+  DOCKER: true
+  
