@@ -12,27 +12,29 @@ global:
   imagePullSecrets: []
   storageClass: ""
 
-  ## @param global.postgresql.postgresqlDatabase PostgreSQL database (overrides `postgresqlDatabase`)
-  ## @param global.postgresql.postgresqlUsername PostgreSQL username (overrides `postgresqlUsername`)
-  ## @param global.postgresql.existingSecret Name of existing secret to use for PostgreSQL passwords (overrides `existingSecret`)
-  ## @param global.postgresql.postgresqlPassword PostgreSQL admin password (overrides `postgresqlPassword`)
-  ## @param global.postgresql.servicePort PostgreSQL port (overrides `service.port`
-  ## @param global.postgresql.replicationPassword Replication user password (overrides `replication.password`)
+  ## @param global.postgresql.auth.postgresqlUsername PostgreSQL username (overrides `postgresqlUsername`)
+  ## @param global.postgresql.auth.postgresqlDatabase PostgreSQL database (overrides `postgresqlDatabase`)
+  ## @param global.postgresql.auth.existingSecret Name of existing secret to use for PostgreSQL passwords (overrides `existingSecret`)
+  ## @param global.postgresql.auth.postgresqlPassword PostgreSQL admin password (overrides `postgresqlPassword`)
+  ## @param global.postgresql.auth.servicePort PostgreSQL port (overrides `service.port`
+  ## @param global.postgresql.auth.replicationPassword Replication user password (overrides `replication.password`)
   ##
   postgresql:
-    postgresqlDatabase: ""
-    postgresqlUsername: ""
-    existingSecret: ""
-    postgresqlPassword: ""
-    servicePort: ""
-    replicationPassword: ""
+    auth:
+      postgresPassword: ""
+      username: ""
+      password: ""
+      database: ""
+      existingSecret: ""
 
 ## @section Common parameters
 ##
-# @param external DNS subdomain; will be used to build sub-components FQDNs and configure CORS
-externalSubDomain: "" # "dev.advana.boozallencsn.com"
 
-## @param nameOverride String to partially override common.names.fullname template (will maintain the release name)
+# @param external DNS subdomain; will be used to build sub-components FQDNs and configure CORS
+##
+externalDomain: "" #"dev.advana.boozallencsn.com"
+
+## @param nameOverride String to partially override common.names.fullname template (will maintain the release name); use for setting web hostname
 ##
 nameOverride: ""
 ## @param fullnameOverride String to fully override common.names.fullname template
@@ -74,7 +76,29 @@ ml:
     repository: "advana/gamechanger/gamechanger-ml"
     pullPolicy: Always
     tag: "latest"
+    ## Enable persistence using Persistent Volume Claims
+  ## ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
+  ##
+  persistence:
+    enabled: true
+    mountPath: "/opt/app-root/volume"
+    ## A manually managed Persistent Volume and Claim
+    ## Requires persistence.enabled: true
+    ## If defined, PVC must be created manually before volume will be bound
+    existingClaim: ""
 
+    ## ml Persistent Volume Storage Class
+    ## If defined, storageClassName: <storageClass>
+    ## If set to "-", storageClassName: "", which disables dynamic provisioning
+    ## If undefined (the default) or set to null, no storageClassName spec is
+    ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+    ##   GKE, AWS & OpenStack)
+    ##
+    ## Storage class of PV to bind. By default it looks for standard storage class.
+    ## If the PV uses a different storage class, specify that here.
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 500Gi
   # replicaCount - <Integer >= 1>
   #   Number of app pod replicas to launch in the load-balancing group.
   #
@@ -229,65 +253,15 @@ ml:
     dhParamsFileName: ""
 
 web:
-  replicaCount: 1
-  # service - <Object/Map>
-  #   Port details of the service used to open application pod to connections from outside.
-  #   Note: must be of type NodePort and only http/https keys are supported.
-  #   For syntax, refer to service.spec.ports[*] definitions of the NodePort service https://kubernetes.io/docs/concepts/services-networking/service/#nodeport
-  service:
-    type: NodePort # ClusterIP
-    ports:
-      http: 5000
-      https: 443
-    nodePorts:
-      http: 31009
-      https: 31209
-    extraPorts:
-      []
-      # - port: 443
-      #   targetPort: 8443
-      #   nodePort: 31209
-      #   protocol: TCP
-      #   name: https
-  httpsProxy:
-    enabled: true
-    image:
-      repository: registry1.dso.mil/ironbank/opensource/nginx/nginx
-      tag: "1.21.1"
-      pullPolicy: IfNotPresent
-    existingConfigMap: ""
-    sslCiphers: "HIGH:!aNULL:!eNULL:!MD5"
-    sslProtocols: "TLSv1.2 TLSv1.3"
-    containerPort: 8443
-    securityContext:
-      runAsUser: 998
-      runAsGroup: 996
-  tls:
-    enabled: true
-    autoGenerate: true
-    existingSecret: ""
-
-  # extraEnvVars - An array to add extra environment variables
-  extraEnvVars: []
-  # extraEnvVarsSecret - existing Secret with extra environment variables
-  extraEnvVarsSecret: ""
-  # extraEnvVarsCM - existing ConfigMap with extra environment variables
-  extraEnvVarsCM: ""
-  # podTolerations - <Array[Map[string, string]]>
-  #   Pod tolerations. Used to make sure pod runs on nodes that are specifically tainted to prevent other pods from
-  #   scheduling there by default. Reference https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
-  podTolerations:
-    - key: "HighMemory"
-      operator: "Equal"
-      effect: "NoExecute"
-      value: "true"
   image:
     registry: "092912502985.dkr.ecr.us-east-1.amazonaws.com"
     repository: "gc-web"
     tag: "latest"
-  startCommand:
-    - "/bin/bash"
-    - "./gamechangerml/api/fastapi/startFast.sh"
+
+  replicaCount: 1
+
+  startCommand: []
+
   init:
     # runs every time web container is restarted
     container:
@@ -307,6 +281,112 @@ web:
         tag: "latest"
       script: |
         echo test
+  qlik:
+    sysAccount: ""
+    adDomain: ""
+  # service - <Object/Map>
+  #   Port details of the service used to open application pod to connections from outside.
+  #   Note: must be of type NodePort and only http/https keys are supported.
+  #   For syntax, refer to service.spec.ports[*] definitions of the NodePort service https://kubernetes.io/docs/concepts/services-networking/service/#nodeport
+  service:
+    type: NodePort # ClusterIP
+    ports:
+      http: 5000
+      https: 443
+    nodePorts:
+      http: 31009
+      https: 31209
+    extraPorts:
+      []
+      # - port: 443
+      #   targetPort: 8443
+      #   nodePort: 31209
+      #   protocol: TCP
+      #   name: https
+
+  tls:
+    enabled: true
+    autoGenerate: true
+    existingSecret: ""
+
+  # extraEnvVars - An array to add extra environment variables
+  extraEnvVars:
+    - REQUEST_ORIGIN_ALLOWED: "*.dev.advana.boozallencsn.com"
+    - REACT_APP_COOKIE_DOMAIN: "dev.advana.boozallencsn.com"
+    - GAMECHANGER_ELASTICSEARCH_INDEX: gamechanger
+    - GAMECHANGER_ELASTICSEARCH_SUGGEST_INDEX: gamechanger
+    - GAMECHANGER_ELASTICSEARCH_ENTITIES_INDEX: entities
+    - GAMECHANGER_ELASTICSEARCH_HISTORY_INDEX: search_history
+    - REACT_APP_QLIK_URL: https://qlik.audit.boozallencsn.com
+    - REACT_APP_MEGA_MENU_BASE_DOMAIN: http://app.dev.advana.boozallencsn.com
+    - PULL_NODES_FROM_NEO4J_MAX_LIMIT: 500
+    - GRAPH_VIEW_NODES_DISPLAYED_WARNING_LIMIT: 500
+    - MAX_GRAPH_VIEW_NODES_DISPLAYED: 5000
+    - REACT_APP_JEXNET_LINK: https://jexnet.dev.advana.boozallencsn.com/
+    - CDO_ELASTICSEARCH_INDEX: gc-cdo
+    - EDA_ELASTICSEARCH_INDEX: gc_eda_2021_json
+    - EDA_ELASTICSEARCH_PROTOCOL: https
+    - EDA_DATA_HOST: 10.194.9.105
+    - HERMES_ELASTICSEARCH_INDEX: hermes_test_1
+    - NEO4J_URL: neo4j://10.194.9.69:7687
+    - NEO4J_USER: neo4j
+    - NEO4J_PASSWORD: admin
+    - MYSQL_HOST_MATOMO: 10.194.9.69
+    - MYSQL_USER_MATOMO: root
+    - MYSQL_PASSWORD_MATOMO: password
+    - DATA_CATALOG_HOST: 10.194.9.123
+    - DATA_CATALOG_PORT: 8443
+    - EMAIL_TRANSPORT_HOST: 10.224.0.248
+    - EMAIL_TRANSPORT_PORT: 25
+    - DOCKER: true
+    - S3_REGION: us-east-1
+    - PG_UM_DB: uot
+    - PG_LOGGING: false
+    - JIRA_ADVANA_PRODUCT: customfield_12719
+    - SECURE_SESSION: false
+    - DISABLE_SSO: true
+    - SAML_CALLBACK_URL: https://gamechanger.dev.advana.boozallencsn.com/login/callback
+    - SAML_ENTRYPOINT: https://sso.advana.boozallencsn.com:8443/auth/realms/local-uot-test/protocol/saml
+    - SAML_CERT: MIICqzCCAZMCBgFyDof7kzANBgkqhkiG9w0BAQsFADAZMRcwFQYDVQQDDA5sb2NhbC11b3QtdGVzdDAeFw0yMDA1MTMxNDUzMTJaFw0zMDA1MTMxNDU0NTJaMBkxFzAVBgNVBAMMDmxvY2FsLXVvdC10ZXN0MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwqEEK6qHYggmuC7NzqoD/S+EWS0OS7dLwY5lXmPCePGdspo0/8Fw1nK8I9zGM7zKy3T8IVDAalkj+PeYADdpgfGM1bp0sA49vTBtrqQEHD2Iw2J8HbUzyWOPHQFXaIhiKzdc+oUc7AYjWipynR0L5vDyEgurDEWTxiggjTiteeAqOaQtKydm2yrrh096TzvcLbzvebTARlRFyJdw6gs/ULdhkZSSHqiGrQNnDk0Nxnvo4hkWu8DtE3b40n6BhW87e2KK4JYW2kgzigXxwwsTqfUrhnpjISZuX+7IQxRfHd2TAZBWi3LzbWY7drxfEWhhAZGomeIzPp4dU+flQY1GhQIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBRxP/9fclc7FD+6yzse/njFeQnaDeAOolLyA68s3fzk9iHFX62TKdvnfizxHuMvjIeBMxv4LlLNE4jFSKGw4juLIfTnzd1n3g+Be0d2ZuKeqCuHSp6iS+1BnV3YymLiRZeVwoGBjUCWShfXNFJQ7GK068PnUU9Ixcz+JSJhjJyYKfZVYPLP+kFIaiRRSZDY8SAN3wLSm6CSGAUBMXDriNX1Sz5Nk09B6btdgPRjKdfECCfwB/3dyYuEi0RsoKS5VZOACWrWS3aUPp78jqrkfgL/Ac5Vzkb3vk+Rv9UV8J+8yzG+Zlz9gLhhhWwGyRH1USYszKkfKwLsNubjWfm1mrN
+    - COOKIE_DOMAIN: .boozallencsn.com
+    - EMAIL_ADDRESS: 607749@bah.com
+    - QLIK_URL: https://10.194.9.96:4242
+    - QLIK_WS_URL: wss://EC2AMAZ-53VQBQF.drced.local:4747
+    - SERVICE_ACCOUNT_PHONE: 202-555-0134
+    - SERVICE_ACCOUNT_ORG: OSD
+    - SERVICE_ACCOUNT_ENV: NIPR
+    - DISABLE_FRONT_END_CONFIG: false
+    - REACT_APP_GC_DECOUPLED: true
+    - REACT_APP_ROOT_CLONE: gamechanger
+    - REACT_APP_NODE_ENV: development
+    - REACT_APP_GLUU_SSO: disabled
+    - REACT_APP_MATOMO_LINK: http://10.194.9.69
+    - REACT_APP_DATA_CATALOG_LINK: http://10.194.9.123:8443
+    - REACT_APP_CLASSIFICATION_BANNER: COMBINED DEV
+    - REACT_APP_CLASSIFICATION_BANNER_COLOR: GREEN
+    - REACT_APP_TUTORIAL_HREF: http://10.194.9.109:8080
+    - REACT_APP_SUPPORT_HREF: https://support.advana.data.mil/plugins/servlet/desk/portal/5/create/113
+    - REACT_APP_WIKI_HREF: http://wiki.advana.data.mil
+    - EXPRESS_TRUST_PROXY: true
+    - APPROVED_API_CALLERS: >
+        http://localhost:8080 http://localhost:3000 http://localhost:8080 http://localhost:8001 http://localhost:8990 http://localhost:3000 http://192.168.56.101:3000 http://10.194.9.104 http://10.194.9.122 http://10.194.9.70 http://10.194.9.81 http://10.194.9.90 http://10.194.9.100 http://10.194.9.101 http://10.194.9.102 http://10.194.9.105 http://10.194.9.109 http://10.194.9.102 http://10.194.9.110 http://10.194.9.122 http://10.194.9.114 http://10.194.9.86 http://audit.bah.com http://dev.audit.boozallencsn.com https://dev.audit.boozallencsn.com https://audit.boozallencsn.com
+    - TLS_KEY_PASSPHRASE: wildcard
+    - TLS_KEY_FILEPATH: "/opt/app-root/src/secrets/tls_key.key"
+    - TLS_CERT_FILEPATH: "/opt/app-root/src/secrets/tls_cert.cer"
+    - TLS_CERT_CA_FILEPATH: "/opt/app-root/src/secrets/ca_bundle.pem"
+  # extraEnvVarsSecret - existing Secret with extra environment variables
+  extraEnvVarsSecret: ""
+  # extraEnvVarsCM - existing ConfigMap with extra environment variables
+  extraEnvVarsCM: ""
+  # podTolerations - <Array[Map[string, string]]>
+  #   Pod tolerations. Used to make sure pod runs on nodes that are specifically tainted to prevent other pods from
+  #   scheduling there by default. Reference https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  podTolerations:
+    - key: "HighMemory"
+      operator: "Equal"
+      effect: "NoExecute"
+      value: "true"
+
 pipelines:
   image:
     registry: "092912502985.dkr.ecr.us-east-1.amazonaws.com"
@@ -433,8 +513,87 @@ crawlers:
     #       crawlerID: "executive_orders_spider"
     #       restartPolicy: "OnFailure"
 
-neo4j: {}
+neo4j-standalone:
+  asSubchart: true
+  name: "neo3j"
+  hosts: []
+  port: ""
+  # Neo4j Edition to use (community|enterprise)
+  edition: "community"
+  # Set acceptLicenseAgreement: "yes" to confirm that you have a Neo4j license agreement.
+  acceptLicenseAgreement: "no"
+  volumes:
+    data:
+      # REQUIRED: specify a volume mode to use for data
+      # Valid values are share|selector|defaultStorageClass|volume|volumeClaimTemplate|dynamic
+      # To get up-and-running quickly, for development or testing, use "defaultStorageClass" for a dynamically provisioned volume of the default storage class.
+      mode: "defaultStorageClass"
+      # Only used if mode is set to "defaultStorageClass"
+      # Dynamic provisioning using the default storageClass
+      defaultStorageClass:
+        accessModes:
+          - ReadWriteOnce
+        requests:
+          storage: 10Gi
+    # provide a volume to use for backups
+    # n.b. backups will be written to /backups on the volume
+    # any of the volume modes shown above for data can be used for backups
+    backups:
+      mode: "defaultStorageClass"
+      # Only used if mode is set to "defaultStorageClass"
+      # Dynamic provisioning using the default storageClass
+      defaultStorageClass:
+        accessModes:
+          - ReadWriteOnce
+        requests:
+          storage: 10Gi
 
+    # provide a volume to use for logs
+    # n.b. logs will be written to /logs/$(POD_NAME) on the volume
+    # any of the volume modes shown above for data can be used for logs
+    logs:
+      mode: "defaultStorageClass"
+      # Only used if mode is set to "defaultStorageClass"
+      # Dynamic provisioning using the default storageClass
+      defaultStorageClass:
+        accessModes:
+          - ReadWriteOnce
+        requests:
+          storage: 2Gi
+
+    # provide a volume to use for csv metrics (csv metrics are only available in Neo4j Enterprise Edition)
+    # n.b. metrics will be written to /metrics/$(POD_NAME) on the volume
+    # any of the volume modes shown above for data can be used for metrics
+    metrics:
+      mode: "defaultStorageClass"
+      # Only used if mode is set to "defaultStorageClass"
+      # Dynamic provisioning using the default storageClass
+      defaultStorageClass:
+        accessModes:
+          - ReadWriteOnce
+        requests:
+          storage: 2Gi
+
+    # provide a volume to use for import storage
+    # n.b. import will be mounted to /import on the underlying volume
+    # any of the volume modes shown above for data can be used for import
+    import:
+      mode: "defaultStorageClass"
+      # Only used if mode is set to "defaultStorageClass"
+      # Dynamic provisioning using the default storageClass
+      defaultStorageClass:
+        accessModes:
+          - ReadWriteOnce
+        requests:
+          storage: 10Gi
+
+    # provide a volume to use for licenses
+    # n.b. licenses will be mounted to /licenses on the underlying volume
+    # any of the volume modes shown above for data can be used for licenses
+    licenses:
+      mode: "share" # share an existing volume (e.g. the data volume)
+      share:
+        name: "data"
 ##########################################
 # External/dependency charts #
 ##########################################

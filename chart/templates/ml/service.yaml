@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "app.ml" . }}
+  name: {{ include "app.ml.name" . }}
   labels: {{- include "common.labels.standard" . | nindent 4 }}
     {{- if .Values.commonLabels }}
     {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
@@ -22,10 +22,10 @@ spec:
       {{- else if eq .Values.ml.service.type "ClusterIP" }}
       nodePort: null
       {{- end }}
-    {{- if .Values.ml.httpsProxy.enabled }}
+    {{- if .Values.ml.tls.enabled }}
     - name: ml-https
       port: {{ .Values.ml.service.ports.https }}
-      targetPort: https-proxy
+      targetPort: https
       protocol: TCP
       {{- if and (or (eq .Values.ml.service.type "NodePort") (eq .Values.ml.service.type "LoadBalancer")) (not (empty .Values.ml.service.nodePorts.https)) }}
       nodePort: {{ .Values.ml.service.nodePorts.https }}
@@ -37,3 +37,4 @@ spec:
     {{- include "common.tplvalues.render" (dict "value" .Values.ml.service.extraPorts "context" $) | nindent 4 }}
     {{- end }}
   selector: {{- include "common.labels.matchLabels" $ | nindent 4 }}
+    app.kubernetes.io/component: ml

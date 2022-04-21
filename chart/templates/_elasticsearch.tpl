@@ -1,6 +1,5 @@
-
 {{/*
-Create a default fully qualified redis name.
+Create a default fully qualified elasticsearch name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
 {{- define "app.elasticsearch.fullname" -}}
@@ -72,6 +71,16 @@ Return the Elasticsearch authentication credentials secret name
     secretKeyRef:
       name: {{ include "elasticsearch.master.tlsSecretName" .Subcharts.elasticsearch }}
       key: ca.crt
+- name: EDA_ELASTICSEARCH_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "elasticsearch.secretName" .Subcharts.elasticsearch }}
+      key: elasticsearch-password
+- name: EDA_ELASTICSEARCH_CA
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "elasticsearch.master.tlsSecretName" .Subcharts.elasticsearch }}
+      key: ca.crt
 {{- else -}}
 - name: GAMECHANGER_ELASTICSEARCH_PASSWORD
   valueFrom:
@@ -79,6 +88,16 @@ Return the Elasticsearch authentication credentials secret name
       name: {{ template "app.elasticsearch.secretName" . }}
       key: elasticsearch-password
 - name: GAMECHANGER_ELASTICSEARCH_CA
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "app.elasticsearch.secretName" . }}
+      key: {{ .Values.elasticsearch.security.tls.certCAFilename }}
+- name: EDA_ELASTICSEARCH_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "app.elasticsearch.secretName" . }}
+      key: elasticsearch-password
+- name: EDA_ELASTICSEARCH_CA
   valueFrom:
     secretKeyRef:
       name: {{ include "app.elasticsearch.secretName" . }}

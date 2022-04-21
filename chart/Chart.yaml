@@ -29,7 +29,7 @@ dependencies:
     name: minio
     repository: https://charts.min.io/
     version: 3.x.x
-  # - condition: neo4j.enabled
-  #   name: neo4j
-  #   repository: https://helm.neo4j.com/neo4j
-  #   version:
+  - condition: neo4j-standalone.asSubchart
+    name: neo4j-standalone
+    repository: https://helm.neo4j.com/neo4j
+    version: 4.x.x

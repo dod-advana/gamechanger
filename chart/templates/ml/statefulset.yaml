@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "app.ml" . }}
+  name: {{ include "app.ml.name" . }}
   labels: {{- include "common.labels.standard" . | nindent 4 }}
     {{- if .Values.commonLabels }}
     {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
@@ -12,7 +12,7 @@ metadata:
   {{- end }}
   namespace: {{ .Release.Namespace }}
 spec:
-  serviceName: {{ include "app.ml" . }}
+  serviceName: {{ include "app.ml.name" . }}
   replicas: {{ .Values.ml.replicaCount }}
   updateStrategy:
     type: {{ .Values.ml.updateStrategy.type }}
@@ -33,9 +33,6 @@ spec:
         checksum/tls-secret: {{ include (print $.Template.BasePath "/ml/tls-secret.yaml") . | sha256sum }}
         {{- end}}
         checksum/configmap: {{ include (print $.Template.BasePath "/ml/configmap.yaml") . | sha256sum }}
-        {{- if .Values.ml.httpsProxy.enabled }}
-        checksum/https-proxy-configmap: {{ include (print $.Template.BasePath "/ml/https-proxy-configmap.yaml") . | sha256sum }}
-        {{- end }}
         {{- if eq (include "app.elasticsearch.createSecret" .) "true" }}
         checksum/es-secret: {{ include (print $.Template.BasePath "/common/es-secret.yaml") . | sha256sum }}
         {{- end }}
@@ -60,13 +57,10 @@ spec:
       {{- end }}
       terminationGracePeriodSeconds: 10
       volumes:
-        {{- if .Values.ml.httpsProxy.enabled }}
+        {{- if .Values.ml.tls.enabled }}
         - name: tls-secret-files
           secret:
             secretName: {{ include "app.ml.tlsSecretName" . | quote }}
-        - name: https-proxy-config
-          configMap:
-            name: {{ include "app.ml.httpsProxy.configMapName" . | quote }}
         {{- end }}
       {{- if .Values.ml.init.container.enabled }}
       initContainers:
@@ -79,6 +73,11 @@ spec:
           {{- with .Values.ml.appContainerSecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumes: 
+          {{- if .Values.ml.persistence.enabled }}
+            - name: {{ include "app.ml.pvcName" . }}
+              mountPath: {{ .Values.ml.persistence.mountPath | quote }}
           {{- end }}
           env:
             - name: APP_VERSION
@@ -99,9 +98,11 @@ spec:
             {{- end }}
       {{- end }}
       containers:
-        - name: {{ include "app.ml" . }}
+        - name: {{ include "app.ml.name" . }}
           image: {{ template "app.ml.image" . }}
-          imagePullPolicy: {{ .Values.ml.image.pullPolicy | quote }}
+          {{- with .Values.ml.image.pullPolicy }}
+          imagePullPolicy: {{ . | quote }}
+          {{- end }}
           {{- with .Values.ml.startCommand }}
           command:
             {{- range . }}
@@ -111,6 +112,11 @@ spec:
           {{- with .Values.ml.appContainerSecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts: 
+          {{- if .Values.ml.persistence.enabled }}
+            - name: {{ include "app.ml.pvcName" . }}
+              mountPath: {{ .Values.ml.persistence.mountPath | quote }}
           {{- end }}
           env:
             - name: APP_VERSION
@@ -135,34 +141,31 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.ml.service.ports.http }}
+            {{- if .Values.ml.tls.enabled }}
+            - name: https
+              containerPort: {{ .Values.ml.service.ports.https }}
+              protocol: TCP
+            {{- end }}
           {{- with .Values.ml.probes -}}{{- toYaml . | nindent 10}}{{- end }}
           {{- with .Values.ml.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-        {{- if .Values.ml.httpsProxy.enabled }}
-        - name: https-proxy
-          image: {{ template "app.ml.httpsProxy.image" . }}
-          imagePullPolicy: {{ .Values.ml.image.pullPolicy | quote }}
-          args:
-            - nginx
-            - "-c"
-            - "/etc/nginx/nginx.conf"
-          volumeMounts:
-            - name: https-proxy-config
-              mountPath: "/etc/nginx/nginx.conf"
-              subPath: "nginx.conf"
-              readOnly: true
-            - name: tls-secret-files
-              mountPath: "/etc/nginx/tls"
-              readOnly: true
-          ports:
-            - name: https-proxy
-              containerPort: {{ .Values.ml.httpsProxy.containerPort }}
-              protocol: TCP
-          {{- with .Values.ml.httpsProxy.securityContext }}
-          securityContext:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          {{- end }}
-
+  {{- if .Values.ml.persistence.enabled }}
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ include "app.ml.pvcName" . }}
+      labels:
+        {{- include "common.labels.standard" . | nindent 8 }}
+    spec:
+      {{- with .Values.ml.persistence.accessModes }}
+      accessModes:
+        {{- . | toYaml | nindent 8 }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.ml.persistence.size | quote }}
+      {{- with .Values.ml.persistence.storageClass }}
+        storageClassName: {{ . }}
+      {{- end }}
+  {{- end }}

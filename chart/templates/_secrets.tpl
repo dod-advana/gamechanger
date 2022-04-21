@@ -166,7 +166,7 @@ Get the app ml secret name
 {{- if .Values.ml.existingSecret }}
     {{- printf "%s" (tpl .Values.ml.existingSecret $) -}}
 {{- else -}}
-    {{- printf "%s-secret" (include "app.ml" .) -}}
+    {{- printf "%s-secret" (include "app.ml.name" .) -}}
 {{- end -}}
 {{- end -}}
 
@@ -187,7 +187,7 @@ Return the secret containing app.ml TLS certificates
 {{- if $secretName -}}
     {{- printf "%s" (tpl $secretName $) -}}
 {{- else -}}
-    {{- printf "%s-crt" (include "common.names.fullname" .) -}}
+    {{- printf "%s-tls-crt" (include "app.ml.name" .) -}}
 {{- end -}}
 {{- end -}}
 
@@ -260,7 +260,61 @@ Get the app web secret name
 {{- if .Values.web.existingSecret }}
     {{- printf "%s" (tpl .Values.web.existingSecret $) -}}
 {{- else -}}
-    {{- printf "%s-secret" (include "app.ml" .) -}}
+    {{- printf "%s-secret" (include "app.web.name" .) -}}
+{{- end -}}
+{{- end -}}
+{{/*
+Return true if a TLS secret object should be created
+*/}}
+{{- define "app.web.createTlsSecret" -}}
+{{- if and .Values.web.tls.enabled (not .Values.web.tls.existingSecret) }}
+    {{- true -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Return the secret containing app.ml TLS certificates
+*/}}
+{{- define "app.web.tlsSecretName" -}}
+{{- $secretName := .Values.web.tls.existingSecret -}}
+{{- if $secretName -}}
+    {{- printf "%s" (tpl $secretName $) -}}
+{{- else -}}
+    {{- printf "%s-tls-crt" (include "app.web.name" .) -}}
+{{- end -}}
+{{- end -}}
+
+
+{{/*
+Return the path to the cert file.
+*/}}
+{{- define "app.web.tlsCert" -}}
+{{- if (include "app.web.createTlsSecret" . ) -}}
+    {{- printf "/etc/nginx/tls/%s" "tls.crt" -}}
+{{- else -}}
+    {{- required "Certificate filename is required when TLS is enabled" .Values.web.tls.certFilename | printf "/etc/nginx/tls/%s" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Return the path to the cert key file.
+*/}}
+{{- define "app.web.tlsCertKey" -}}
+{{- if (include "app.web.createTlsSecret" . ) -}}
+    {{- printf "/etc/nginx/tls/%s" "tls.key" -}}
+{{- else -}}
+    {{- required "Certificate Key filename is required when TLS is enabled" .Values.web.tls.certKeyFilename | printf "/etc/nginx/tls/%s" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Return the path to the CA cert file.
+*/}}
+{{- define "app.web.tlsCACert" -}}
+{{- if (include "app.web.createTlsSecret" . ) -}}
+    {{- printf "/etc/nginx/tls/%s" "ca.crt" -}}
+{{- else -}}
+    {{- required "Certificate CA filename is required when TLS is enabled" .Values.web.tls.certCAFilename | printf "/etc/nginx/tls/%s" -}}
 {{- end -}}
 {{- end -}}
 
@@ -290,6 +344,6 @@ Get the app ml secret name
 {{- if .Values.crawlers.existingSecret }}
     {{- printf "%s" (tpl .Values.crawlers.existingSecret $) -}}
 {{- else -}}
-    {{- printf "%s-secret" (include "app.crawlers" .) -}}
+    {{- printf "%s-secret" (include "app.crawlers.name" .) -}}
 {{- end -}}
 {{- end -}}

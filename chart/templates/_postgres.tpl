@@ -4,13 +4,13 @@ Create a default fully qualified postgresql name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
 {{- define "app.postgresql.fullname" -}}
-{{- $name := default "postgresql" .Values.postgresql.nameOverride -}}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- $name := default include "common.names.fullname" .Subcharts.postgres -}}
+{{- printf "%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{- define "app.postgresql.host" -}}
   {{- if .Values.postgresql.asSubchart -}}
-    {{ include "postgresql.primary.svc.headless" .Subcharts.postgresql }}
+    {{ printf "%s.%s.svc.%s" (include "postgresql.primary.fullname" .Subcharts.postgresql) .Release.Namespace .Values.clusterDomain }}
   {{- else -}}
     {{- .Values.postgresql.host -}}
   {{- end -}}
@@ -25,10 +25,11 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- end -}}
 
 {{- define "app.postgresql.username" -}}
+{{- $name := default "postgres" .Values.postgresql.user -}}
   {{- if .Values.postgresql.asSubchart -}}
-    {{- include "postgresql.username" .Subcharts.postgresql -}}
+    {{- default (include "postgresql.username" .Subcharts.postgresql) $name -}}
   {{- else -}}
-    {{- .Values.postgresql.user -}}
+    {{- $name -}}
   {{- end -}}
 {{- end -}}
 
@@ -40,10 +41,27 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
   {{- end -}}
 {{- end -}}
 
-{{- define "app.postgresql.password" -}}
-{{- if not (empty .Values.postgresql.password) }}
-    {{- .Values.postgresql.password -}}
-{{- else -}}
-    {{- include "getValueFromSecret" (dict "Namespace" .Release.Namespace "Name" (include "app.postgresql.secretName" .) "Length" 10 "Key" "postgres-password")  -}}
-{{- end -}}
+{{- define "app.postgresql.security.envVars" -}}
+{{- if .Values.postgresql.asSubchart -}}
+- name: POSTGRES_PASSWORD_UOT
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "postgresql.secretName" .Subcharts.postgresql }}
+      key: postgres-password
+- name: POSTGRES_PASSWORD_GAME_CHANGER
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "postgresql.secretName" .Subcharts.postgresql }}
+      key: postgres-password
+- name: POSTGRES_PASSWORD_GC_ORCHESTRATION
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "postgresql.secretName" .Subcharts.postgresql }}
+      key: postgres-password
+- name: PG_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "postgresql.secretName" .Subcharts.postgresql }}
+      key: postgres-password
+{{- end -}}      
 {{- end -}}

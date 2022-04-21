@@ -1,7 +1,7 @@
 apiVersion:  {{ include "common.capabilities.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
-  name: {{ include "app.web" . }}
+  name: {{ include "app.web.name" . }}
   labels: {{- include "common.labels.standard" . | nindent 4 }}
     {{- if .Values.commonLabels }}
     {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
@@ -27,9 +27,6 @@ spec:
         checksum/tls-secret: {{ include (print $.Template.BasePath "/web/tls-secret.yaml") . | sha256sum }}
         {{- end}}
         checksum/configmap: {{ include (print $.Template.BasePath "/web/configmap.yaml") . | sha256sum }}
-        {{- if .Values.web.httpsProxy.enabled }}
-        checksum/https-proxy-configmap: {{ include (print $.Template.BasePath "/web/https-proxy-configmap.yaml") . | sha256sum }}
-        {{- end }}
         {{- if eq (include "app.elasticsearch.createSecret" .) "true" }}
         checksum/es-secret: {{ include (print $.Template.BasePath "/common/es-secret.yaml") . | sha256sum }}
         {{- end }}
@@ -48,13 +45,12 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-        {{- if .Values.web.httpsProxy.enabled }}
+      terminationGracePeriodSeconds: 10
+      volumes: 
+        {{- if .Values.web.tls.enabled }}
         - name: tls-secret-files
           secret:
             secretName: {{ include "app.web.tlsSecretName" . | quote }}
-        - name: https-proxy-config
-          configMap:
-            name: {{ include "app.web.httpsProxy.configMapName" . | quote }}
         {{- end }}
       {{- if .Values.web.init.container.enabled }}
       initContainers:
@@ -87,47 +83,49 @@ spec:
             {{- end }}
       {{- end }}
       containers:
-        - name: {{ .Chart.Name }}
-          {{- with .Values.startCommand }}
+        - name: {{ include "app.web.name" . }}
+          image: {{ template "app.web.image" . }}
+          {{- with .Values.web.image.pullPolicy }}
+          imagePullPolicy: {{ . | quote }}
+          {{- end }}
+          {{- with .Values.web.startCommand }}
           command:
             {{- range . }}
             {{- printf "- %s" (. | quote) | nindent 12 }}
             {{- end -}}
           {{- end }}
-          {{- if (include "chart.isFileConfigDefined" .) }}
-          volumeMounts:
-            - name: file-config-vol
-              mountPath: {{ .Values.fileConfig.baseMountPath | quote }}
-              readOnly: true
-          {{- end }}
-          {{- with .Values.appContainerSecurityContext }}
+          {{- with .Values.web.appContainerSecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          image: {{ include "chart.imageRepo" . | quote }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             - name: REACT_APP_VERSION
               value: {{ default "1.0.0" .Chart.AppVersion | quote }}
-            - name: REACT_APP_VERSION
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "chart.envConfigSecretName" .  | quote }}
-                  key: REACT_APP_VERSION
-                  optional: true
-          envFrom:
-            - secretRef:
-                name: {{ include "chart.envConfigSecretName" .  | quote }}
-          {{- with .Values.service }}
-          ports:
-            {{- range (list .http .https) }}
-            - name: {{ .name }}
-              containerPort: {{ .targetPort }}
-              protocol: {{ .protocol }}
-            {{- end }}
+          {{- if .Values.elasticsearch.security.enabled }}
+          {{- include "app.elasticsearch.security.envVars" . | nindent 12 }}
           {{- end }}
-          {{- with .Values.probes -}}{{- toYaml . | nindent 10}}{{- end }}
-          {{- with .Values.resources }}
+          {{- include "app.postgresql.security.envVars" . | nindent 12 }}
+          {{- if .Values.web.extraEnvVars }}
+            {{- include "common.tplvalues.render" ( dict "value" .Values.web.extraEnvVars "context" $ ) | nindent 12 }}
+          {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "app.web.configMapName" .  | quote }}
+            {{- if .Values.web.extraEnvVarsCM }}
+            - configMapRef:
+                name: {{ include "common.tplvalues.render" ( dict "value" .Values.web.extraEnvVarsCM "context" $ ) }}
+            {{- end }}
+            {{- if .Values.web.extraEnvVarsSecret }}
+            - secretRef:
+                name: {{ include "common.tplvalues.render" ( dict "value" .Values.web.extraEnvVarsSecret "context" $ ) }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.web.service.ports.http }}
+            - name: https
+              containerPort: {{ .Values.web.service.ports.https }}
+          {{- with .Values.web.probes -}}{{- toYaml . | nindent 10}}{{- end }}
+          {{- with .Values.web.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}

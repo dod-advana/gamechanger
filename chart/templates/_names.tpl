@@ -3,7 +3,7 @@
 Expand the name of the chart.
 */}}
 {{- define "common.names.name" -}}
-{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" | lower -}}
 {{- end -}}
 
 {{/*
@@ -26,7 +26,7 @@ If release name contains chart name it will be used as a full name.
 {{- if contains $name .Release.Name -}}
 {{- .Release.Name | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" | lower -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
@@ -52,8 +52,10 @@ Usage:
 {{- end -}}
 
 ############ begin app component names
+
+# gc-global-component names
 {{/*
-Create the name of the service account to use
+Create the name of the service account to use for all app components
 */}}
 {{- define "app.serviceAccountName" -}}
 {{- if .Values.serviceAccount }}
@@ -63,14 +65,6 @@ Create the name of the service account to use
 {{- end }}
 {{- end }}
 
-{{- define "app.crawlers" -}}
-  {{- printf "%s-crawlers" (include "common.names.fullname" .) -}}
-{{- end -}}
-
-{{- define "app.ml" -}}
-  {{- printf "%s-ml" (include "common.names.fullname" .) -}}
-{{- end -}}
-### app configmap templating
 {{/*
 Get the global configuration ConfigMap name.
 */}}
@@ -82,6 +76,14 @@ Get the global configuration ConfigMap name.
 {{- end -}}
 {{- end -}}
 
+# gc-ml-component names
+{{- define "app.ml.name" -}}
+  {{- printf "%s-ml" (include "common.names.fullname" .) -}}
+{{- end -}}
+# gc-ml-component names
+{{- define "app.ml.host" -}}
+  {{ printf "%s.%s.svc.%s" (include "app.ml.name" .) .Release.Namespace .Values.clusterDomain }}
+{{- end -}}
 
 {{/*
 Get the ml configuration ConfigMap name.
@@ -90,7 +92,7 @@ Get the ml configuration ConfigMap name.
 {{- if .Values.ml.existingConfigMapName -}}
 {{- printf "%s" (tpl .Values.ml.existingConfigMapName $) -}}
 {{- else -}}
-{{- printf "%s-config" (include "app.ml" .) -}}
+{{- printf "%s-config" (include "app.ml.name" .) -}}
 {{- end -}}
 {{- end -}}
 
@@ -101,10 +103,9 @@ Get the ml configuration ConfigMap name.
 {{- if .Values.ml.httpsProxy.existingConfigMap -}}
 {{- printf "%s" (tpl .Values.ml.httpsProxy.existingConfigMap $) -}}
 {{- else -}}
-{{- printf "%s-https-config" (include "app.ml" .) -}}
+{{- printf "%s-https-config" (include "app.ml.name" .) -}}
 {{- end -}}
 {{- end -}}
-
 
 {{/*
 Create the name of the service account to use for ml
@@ -116,6 +117,7 @@ Create the name of the service account to use for ml
 {{- include "common.names.fullname" . }}
 {{- end }}
 {{- end }}
+
 {{/*
 One Time Job Name
 */}}
@@ -124,6 +126,31 @@ One Time Job Name
 {{- end }}
 
 # gc-web-component names
+{{- define "app.web.name" -}}
+  {{- printf "%s-web" (include "common.names.fullname" .) -}}
+{{- end -}}
+
+{{- define "app.web.fqdn" -}}
+{{ $name := (include "common.names.name" . | lower )}}
+{{- if .Values.externalDomain -}}
+{{- printf "%s.%s" $name .Values.externalDomain -}}
+{{- else -}}
+{{ printf "%s" $name }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Create the external web url, with protocol, for external hosts/clients
+*/}}
+{{- define "app.web.externalUrl" -}}
+{{- if .Values.web.tls.enabled -}}
+  {{- printf "https://%s" (include "app.web.fqdn" . ) -}}
+{{- else -}}
+  {{- printf "http://%s" (include "app.web.fqdn" . ) -}}
+{{- end -}}
+{{- end -}}
+
+
 {{/*
 Create the name of the service account to use for web
 */}}
@@ -142,37 +169,17 @@ Get the web configuration ConfigMap name.
 {{- if .Values.web.existingConfigMapName -}}
 {{- printf "%s" (tpl .Values.web.existingConfigMapName $) -}}
 {{- else -}}
-{{- printf "%s-config" (include "app.web" .) -}}
-{{- end -}}
-{{- end -}}
-{{/*
-Get the web httpsProxy configuration ConfigMap name.
-*/}}
-{{- define "app.web.httpsProxy.configMapName" -}}
-{{- if .Values.web.httpsProxy.existingConfigMap -}}
-{{- printf "%s" (tpl .Values.web.httpsProxy.existingConfigMap $) -}}
-{{- else -}}
-{{- printf "%s-https-config" (include "app.web" .) -}}
+{{- printf "%s-config" (include "app.web.name" .) -}}
 {{- end -}}
 {{- end -}}
 
-# gc-neo4j-component
-{{- define "app.neo4j" -}}
-  {{- printf "%s-neo4j" (include "common.names.fullname" .) -}}
+
+# gc-crawlers-component names
+{{- define "app.crawlers.name" -}}
+  {{- printf "%s-crawlers" (include "common.names.fullname" .) -}}
 {{- end -}}
 
-{{- define "app.pipelines" -}}
+# gc-pipelines-component names
+{{- define "app.pipelines.name" -}}
   {{- printf "%s-pipelines" (include "common.names.fullname" .) -}}
-{{- end -}}
-
-{{- define "app.web" -}}
-  {{- printf "%s" (include "common.names.fullname" .) -}}
-{{- end -}}
-
-{{- define "app.web.originHostname" -}}
-{{- if .Values.externalSubDomain -}}
-  {{ printf "%s.%s" (include "app.web" .) .Values.externalSubDomain }}
-{{- else -}}
-  {{ printf "%s.%s.svc.%s" (include "app.web" .) .Release.Namespace .Values.clusterDomain }}
-{{- end -}}
 {{- end -}}

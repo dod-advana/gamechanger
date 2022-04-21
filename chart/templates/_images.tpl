@@ -78,7 +78,7 @@ imagePullSecrets:
 Return the proper Docker Image Registry Secret Names
 */}}
 {{- define "app.ml.imagePullSecrets" -}}
-{{ include "common.images.pullSecrets" (dict "images" (list .Values.ml.image .Values.ml.init.container.image .Values.ml.init.job.image .Values.ml.httpsProxy.image) "global" .Values.global) }}
+{{ include "common.images.pullSecrets" (dict "images" (list .Values.ml.image .Values.ml.init.container.image .Values.ml.init.job.image) "global" .Values.global) }}
 {{- end -}}
 
 {{/*
@@ -102,20 +102,12 @@ Return the proper init job image name
 {{ include "common.images.image" (dict "imageRoot" .Values.ml.init.job.image "global" .Values.global) }}
 {{- end -}}
 
-{{/*
-Return the proper init job image name 
-*/}}
-{{- define "app.ml.httpsProxy.image" -}}
-{{ include "common.images.image" (dict "imageRoot" .Values.ml.httpsProxy.image "global" .Values.global) }}
-{{- end -}}
-
-
 
 {{/*
 Return the proper Docker Image Registry Secret Names
 */}}
 {{- define "app.web.imagePullSecrets" -}}
-{{ include "common.images.pullSecrets" (dict "images" (list .Values.web.image .Values.web.init.container.image .Values.web.init.job.image .Values.web.httpsProxy.image) "global" .Values.global) }}
+{{ include "common.images.pullSecrets" (dict "images" (list .Values.web.image .Values.web.init.container.image .Values.web.init.job.image ) "global" .Values.global) }}
 {{- end -}}
 
 {{/*
@@ -138,15 +130,6 @@ Return the proper init job image name
 {{- define "app.web.init.job.image" -}}
 {{ include "common.images.image" (dict "imageRoot" .Values.web.init.job.image "global" .Values.global) }}
 {{- end -}}
-
-{{/*
-Return the proper init job image name 
-*/}}
-{{- define "app.web.httpsProxy.image" -}}
-{{ include "common.images.image" (dict "imageRoot" .Values.web.httpsProxy.image "global" .Values.global) }}
-{{- end -}}
-
-
 
 
 {{/*
