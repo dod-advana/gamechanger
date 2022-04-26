@@ -80,7 +80,16 @@ Get the global configuration ConfigMap name.
 {{- define "app.ml.name" -}}
   {{- printf "%s-ml" (include "common.names.fullname" .) -}}
 {{- end -}}
-# gc-ml-component names
+
+{{- define "app.ml.fqdn" -}}
+{{ $name := default (include "app.ml.name" . | lower ) .Values.ingress.ml.hostname }}
+{{- if .Values.externalDomain -}}
+{{- printf "%s.%s" $name .Values.externalDomain -}}
+{{- else -}}
+{{ printf "%s" $name }}
+{{- end -}}
+{{- end -}}
+
 {{- define "app.ml.host" -}}
   {{ printf "%s.%s.svc.%s" (include "app.ml.name" .) .Release.Namespace .Values.clusterDomain }}
 {{- end -}}
@@ -96,16 +105,6 @@ Get the ml configuration ConfigMap name.
 {{- end -}}
 {{- end -}}
 
-{{/*
-Get the ml configuration ConfigMap name.
-*/}}
-{{- define "app.ml.httpsProxy.configMapName" -}}
-{{- if .Values.ml.httpsProxy.existingConfigMap -}}
-{{- printf "%s" (tpl .Values.ml.httpsProxy.existingConfigMap $) -}}
-{{- else -}}
-{{- printf "%s-https-config" (include "app.ml.name" .) -}}
-{{- end -}}
-{{- end -}}
 
 {{/*
 Create the name of the service account to use for ml
@@ -131,7 +130,7 @@ One Time Job Name
 {{- end -}}
 
 {{- define "app.web.fqdn" -}}
-{{ $name := (include "common.names.name" . | lower )}}
+{{ $name := default (include "app.web.name" . | lower ) .Values.ingress.web.hostname }}
 {{- if .Values.externalDomain -}}
 {{- printf "%s.%s" $name .Values.externalDomain -}}
 {{- else -}}
@@ -183,3 +182,4 @@ Get the web configuration ConfigMap name.
 {{- define "app.pipelines.name" -}}
   {{- printf "%s-pipelines" (include "common.names.fullname" .) -}}
 {{- end -}}
+

@@ -1,0 +1,67 @@
+{{- if .Values.ingress.web.enabled }}
+{{- if eq .Values.ingress.controller "gce" }}
+  {{- $_ := set . "web_path" "/*" -}}
+{{- else if eq .Values.ingress.controller "ncp" }}
+  {{- $_ := set . "web_path" "/.*" -}}
+{{- else }}
+  {{- $_ := set . "web_path" "/" -}}
+{{- end }}
+{{- $fqdn := include "app.web.fqdn" . }}
+apiVersion: {{ template "common.capabilities.ingress.apiVersion" . }}
+kind: Ingress
+metadata:
+  name: {{ include "app.web.name" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+  annotations:
+  {{- if .Values.web.tls.enabled }}
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  {{- end }}
+  {{- if eq .Values.ingress.controller "ncp" }}
+    ncp/use-regex: "true"
+    {{- if .Values.web.tls.enabled }}
+    ncp/http-redirect: "true"
+    {{- end }}
+  {{- end }}
+  {{- if .Values.ingress.annotations }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.ingress.annotations "context" .) | nindent 4 }}
+  {{- end }}
+  {{- if .Values.commonAnnotations }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" .) | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if eq .Values.ingress.controller "ncp" }}
+  backend: {{- include "common.ingress.backend" (dict "serviceName" (include "app.web.name" .) "servicePort" (ternary "https" "http" .Values.web.tls.enabled) "context" $) | nindent 4 }}
+  {{- end }}
+  {{- if and .Values.ingress.ingressClassName (eq "true" (include "common.ingress.supportsIngressClassname" .)) }}
+  ingressClassName: {{ .Values.ingress.ingressClassName | quote }}
+  {{- end }}
+  rules:
+    {{- if .Values.ingress.web.hostname }}
+    - host: {{ $fqdn | quote }}
+      http:
+        paths:
+          {{- if .Values.ingress.web.extraPaths }}
+          {{- toYaml .Values.ingress.web.extraPaths | nindent 10 }}
+          {{- end }}
+          - path: {{ .web_path }}
+            {{- if eq "true" (include "common.ingress.supportsPathType" .) }}
+            pathType: {{ .Values.ingress.web.pathType }}
+            {{- end }}
+            backend: {{- include "common.ingress.backend" (dict "serviceName" (include "app.web.name" .) "servicePort" (ternary "https" "http" .Values.web.tls.enabled) "context" $) | nindent 14 }}
+    {{- end }}
+  {{- if or (and .Values.ingress.web.tls (or (include "common.ingress.certManagerRequest" ( dict "annotations" .Values.ingress.web.annotations )) .Values.ingress.web.selfSigned)) .Values.ingress.web.extraTls }}
+  tls:
+    {{- if and .Values.ingress.web.tls (or (include "common.ingress.certManagerRequest" ( dict "annotations" .Values.ingress.web.annotations )) .Values.ingress.web.selfSigned) }}
+    - hosts:
+        - {{ $fqdn | quote }}
+      secretName: {{ printf "%s-tls" $fqdn }}
+    {{- end }}
+    {{- if .Values.ingress.web.extraTls }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.ingress.web.extraTls "context" $) | nindent 4 }}
+    {{- end }}
+  {{- end }}
+{{- end }}

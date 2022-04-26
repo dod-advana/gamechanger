@@ -24,8 +24,8 @@ data:
   REDIS_URL: "redis://{{ include "app.redis.host" . }}"
   GAMECHANGER_ML_API_HOST: {{ include "app.ml.host" . | quote }}
   NEO4J_URL: "neo4j://{{ include "app.neo4j.host" . }}"
-  tester: {{ include "app.neo4j.name" . | quote }}
   SAML_ISSUER: "{{ include "app.web.externalUrl" . }}"
+  SAML_CALLBACK_URL: "{{ include "app.web.externalUrl" . }}/login/callback"
   REACT_APP_BACKEND_URL: "{{ include "app.web.externalUrl" . }}"
   REACT_APP_MEGA_MENU_ENDPOINT: "{{ include "app.web.externalUrl" . }}/api/gamechanger/megamenu/links"
   REACT_APP_USER_TOKEN_ENDPOINT: "{{ include "app.web.externalUrl" . }}/api/auth/token"

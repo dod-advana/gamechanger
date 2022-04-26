@@ -102,7 +102,7 @@ spec:
             - name: REACT_APP_VERSION
               value: {{ default "1.0.0" .Chart.AppVersion | quote }}
           {{- if .Values.elasticsearch.security.enabled }}
-          {{- include "app.elasticsearch.security.envVars" . | nindent 12 }}
+            {{- include "app.elasticsearch.security.envVars" . | nindent 12 }}
           {{- end }}
           {{- include "app.postgresql.security.envVars" . | nindent 12 }}
           {{- if .Values.web.extraEnvVars }}
@@ -122,8 +122,10 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.web.service.ports.http }}
+            {{- if .Values.web.tls.enabled }}
             - name: https
               containerPort: {{ .Values.web.service.ports.https }}
+            {{- end }}
           {{- with .Values.web.probes -}}{{- toYaml . | nindent 10}}{{- end }}
           {{- with .Values.web.resources }}
           resources:

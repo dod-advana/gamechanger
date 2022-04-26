@@ -1,0 +1,35 @@
+{{- if (include "app.neo4j.enabled" .) -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.neo4j.name" . }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: neo4j
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+spec:
+  publishNotReadyAddresses: false
+  type: {{ .Values.neo4j.service.type }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.neo4j.service.ports.bolt }}
+      targetPort: bolt
+      name: tcp-bolt
+    - protocol: TCP
+      port: {{ .Values.neo4j.service.ports.http }}
+      targetPort: http
+      name: tcp-http
+    - protocol: TCP
+      port: {{ .Values.neo4j.service.ports.https }}
+      targetPort: https
+      name: tcp-https
+    {{- if .Values.neo4j.service.extraPorts }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.neo4j.service.extraPorts "context" $) | nindent 4 }}
+    {{- end }}
+  selector: {{- include "common.labels.matchLabels" $ | nindent 4 }}
+    app.kubernetes.io/component: neo4j
+{{- end -}}

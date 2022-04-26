@@ -131,7 +131,20 @@ Return the proper init job image name
 {{ include "common.images.image" (dict "imageRoot" .Values.web.init.job.image "global" .Values.global) }}
 {{- end -}}
 
-
+#### neo4j images
+{{/*
+Return the proper Docker Image Registry Secret Names
+*/}}
+{{- define "app.neo4j.imagePullSecrets" -}}
+{{ include "common.images.pullSecrets" (dict "images" (list .Values.neo4j.image) "global" .Values.global) }}
+{{- end -}}
+{{/*
+Return the proper app ml image name (based on .Values.x.image block)
+*/}}
+{{- define "app.neo4j.image" -}}
+{{ include "common.images.image" (dict "imageRoot" .Values.neo4j.image "global" .Values.global) }}
+{{- end -}}
+####
 {{/*
 Return the proper default crawlers cronjob image name 
 */}}

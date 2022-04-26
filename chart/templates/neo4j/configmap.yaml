@@ -1,0 +1,75 @@
+{{- $confFileName := "config/neo4j-community.conf" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.neo4j.configMapName" . | printf "%s-defaults" | quote }}
+  labels:
+  {{- include "common.labels.standard" . | nindent 4 }}
+  {{- if .Values.commonLabels }}
+  {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+  {{- end }}
+    app.kubernetes.io/component: neo4j
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+  namespace: {{ .Release.Namespace }}
+data: 
+    # Helm defaults
+  dbms.mode: "{{ index .Values.neo4j.config "dbms.mode" | default "SINGLE" | upper }}"
+
+  # Bolt keep alive
+  # this helps to ensure that LoadBalancers do not close bolt connections that are in use but appear idle
+  dbms.connector.bolt.connection_keep_alive: "30s"
+  dbms.connector.bolt.connection_keep_alive_for_requests: "ALL"
+  dbms.connector.bolt.connection_keep_alive_streaming_scheduling_interval: "30s"
+{{ (.Files.Glob $confFileName).AsConfig | indent 2 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.neo4j.configMapName" . }}
+  labels:
+  {{- include "common.labels.standard" . | nindent 4 }}
+  {{- if .Values.commonLabels }}
+  {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+  {{- end }}
+    app.kubernetes.io/component: neo4j
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+  namespace: {{ .Release.Namespace }}
+data: 
+  dbms.default_listen_address: "0.0.0.0"
+
+  {{- if .Values.neo4j.volumes.import }}
+  # Import
+  dbms.directories.import: "/import"
+  {{- end }}
+  {{- if .Values.neo4j.volumes.logs }}
+  # Logging
+  dbms.directories.logs: "/logs"
+  {{- end }}
+  # Use more reliable defaults SSL / TLS settings for K8s
+  dbms.ssl.policy.bolt.client_auth: "NONE"
+  dbms.ssl.policy.https.client_auth: "NONE"
+
+  {{- /* https and bolt+ssl specific settings */}}
+  {{- if .Values.neo4j.tls.enabled }}
+  dbms.connector.bolt.tls_level: "REQUIRED"
+  dbms.connector.https.enabled: "true"
+  # Enable SSL policy for bolt and https 
+  dbms.ssl.policy.bolt.enabled: "true"
+  dbms.ssl.policy.https.enabled: "true"
+  {{- end }}
+  
+  {{- with .Values.neo4j.config }}
+  {{- if hasKey . "dbms.jvm.additional" }}
+    {{- fail "dbms.jvm.additional properties cannot be set in values.config. Set additional JVM arguments in values.jvm.additionalJvmArguments" }}
+  {{- end }}
+  {{- range $key, $value := . }}
+  {{- if not (kindIs "string" $value) }}
+    {{- cat "config values must be strings." $key "value:" $value "type:" (kindOf $value) " (put values in double quotes so they are treated as strings in yaml)" | fail }}
+  {{- end }}
+  {{- end }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

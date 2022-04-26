@@ -20,8 +20,7 @@ spec:
         {{- with .Values.podAnnotations -}}{{- toYaml . | nindent 8 }}{{- end }}
       labels:
       {{- include "common.labels.standard" . | nindent 8 }}
-        role: ml
-        app.kubernetes.io/component: ml
+        app.kubernetes.io/component: ml-otj
       {{- if .Values.commonLabels }}
       {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 8 }}
       {{- end }}

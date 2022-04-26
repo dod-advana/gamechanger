@@ -1,4 +1,4 @@
-apiVersion: apps/v1
+apiVersion: {{ include "common.capabilities.statefulset.apiVersion" . }}
 kind: StatefulSet
 metadata:
   name: {{ include "app.ml.name" . }}
@@ -26,20 +26,19 @@ spec:
     metadata:
       annotations:
         deploy-ts: {{ now | quote }}
+        checksum/configmap: {{ include (print $.Template.BasePath "/ml/configmap.yaml") . | sha256sum }}
         {{- if not .Values.ml.existingSecret }}
         checksum/secret: {{ include (print $.Template.BasePath "/ml/secret.yaml") . | sha256sum }}
         {{- end}}
         {{- if and (not .Values.ml.tls.existingSecret) .Values.ml.tls.enabled }}
         checksum/tls-secret: {{ include (print $.Template.BasePath "/ml/tls-secret.yaml") . | sha256sum }}
         {{- end}}
-        checksum/configmap: {{ include (print $.Template.BasePath "/ml/configmap.yaml") . | sha256sum }}
         {{- if eq (include "app.elasticsearch.createSecret" .) "true" }}
         checksum/es-secret: {{ include (print $.Template.BasePath "/common/es-secret.yaml") . | sha256sum }}
         {{- end }}
         {{- with .Values.ml.podAnnotations -}}{{- toYaml . | nindent 8 }}{{- end }} 
       labels:   
       {{- include "common.labels.standard" . | nindent 8 }}
-        role: ml
         app.kubernetes.io/component: ml
       {{- if .Values.commonLabels }}
       {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 8 }}
@@ -66,7 +65,9 @@ spec:
       initContainers:
         - name: init-ml
           image: {{ template "app.ml.init.container.image" . }}
-          imagePullPolicy: {{ .Values.ml.image.pullPolicy | quote }}
+          {{- with .Values.ml.image.pullPolicy }}
+          imagePullPolicy: {{ . | quote }}
+          {{- end }}
           command: 
             - |
               {{- .Values.ml.init.container.script | trim | nindent 16 }}
@@ -74,7 +75,7 @@ spec:
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          volumes: 
+          volumeMounts: 
           {{- if .Values.ml.persistence.enabled }}
             - name: {{ include "app.ml.pvcName" . }}
               mountPath: {{ .Values.ml.persistence.mountPath | quote }}
