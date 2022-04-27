@@ -30,3 +30,9 @@ data:
   REACT_APP_MEGA_MENU_ENDPOINT: "{{ include "app.web.externalUrl" . }}/api/gamechanger/megamenu/links"
   REACT_APP_USER_TOKEN_ENDPOINT: "{{ include "app.web.externalUrl" . }}/api/auth/token"
   REACT_APP_LOGIN_ROUTE: "{{ include "app.web.externalUrl" . }}/login"
+  QLIK_SYS_ACCOUNT: {{ .Values.web.qlik.sysAccount | default "" | quote }}
+  QLIK_AD_DOMAIN: {{ .Values.web.qlik.adDomain | default "" | quote }}
+  PG_DST_DB: "data_api"
+  GAMECHANGER_ELASTICSEARCH_CA_FILEPATH: "/etc/secrets/gamechanger.crt"
+  EDA_ELASTICSEARCH_CA_FILEPATH: "/etc/secrets/gamechanger.crt"
+  SERVICE_ACCOUNT_EMAIL: ""

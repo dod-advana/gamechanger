@@ -1,9 +1,10 @@
 apiVersion: v2
-name: GAMECHANGER
+name: gamechanger
 description: The über Helm Chart for the GAMECHANGER application
 type: application
 version: 0.1.0
 appVersion: "0.1.0"
+icon: https://raw.githubusercontent.com/dod-advana/gamechanger/main/assets/logos/GAMECHANGER-PentagonIcon%403x.png
 # maintainers:
 #   - email: containers@bitnami.com
 #     name: Bitnami

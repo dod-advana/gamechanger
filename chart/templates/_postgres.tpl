@@ -27,7 +27,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- define "app.postgresql.username" -}}
 {{- $name := default "postgres" .Values.postgresql.user -}}
   {{- if .Values.postgresql.asSubchart -}}
-    {{- default (include "postgresql.username" .Subcharts.postgresql) $name -}}
+    {{- include "postgresql.username" .Subcharts.postgresql  -}}
   {{- else -}}
     {{- $name -}}
   {{- end -}}

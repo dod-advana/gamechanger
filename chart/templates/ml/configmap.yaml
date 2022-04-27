@@ -17,10 +17,10 @@ data:
   ES_HOST: {{ include "app.elasticsearch.host" . | quote }}
   ES_ENABLE_SSL: {{ include "app.elasticsearch.port" . | quote }}
   ES_ENABLE_AUTH: {{ include "app.elasticsearch.authEnabled" . | quote }}
-  ENV_TYPE: K8S_DEV
+  ENV_TYPE: "K8S_DEV"
   DOWNLOAD_DEP: "true"
   CONTAINER_RELOAD: "false"
-  WORKERS_PER_CORE: 1
-  DOCKER_BUILDKIT: 1
-  DOCKER: true
+  WORKERS_PER_CORE: "1"
+  DOCKER_BUILDKIT: "1"
+  DOCKER: "true"
   

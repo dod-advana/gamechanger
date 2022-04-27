@@ -388,8 +388,8 @@ web:
       http: 80
       https: 8443
     nodePorts:
-      http: 31009
-      https: 31209
+      http: 31007
+      https: 31207
     extraPorts:
       []
       # - port: 443
@@ -418,11 +418,11 @@ web:
   extraEnvVars:
     # should be static (ie not generated w/ templating)
     - name: PULL_NODES_FROM_NEO4J_MAX_LIMIT
-      value: 500
+      value: "500"
     - name: GRAPH_VIEW_NODES_DISPLAYED_WARNING_LIMIT
-      value: 500
+      value: "500"
     - name: MAX_GRAPH_VIEW_NODES_DISPLAYED
-      value: 5000
+      value: "5000"
     - name: REQUEST_ORIGIN_ALLOWED
       value: "*.dev.advana.boozallencsn.com"
     - name: REACT_APP_COOKIE_DOMAIN
@@ -436,23 +436,23 @@ web:
     - name: EMAIL_ADDRESS
       value: 607749@bah.com
     - name: EMAIL_TRANSPORT_HOST
-      value: 10.224.0.248
+      value: "10.224.0.248"
     - name: EMAIL_TRANSPORT_PORT
-      value: 25
+      value: "25"
     - name: DOCKER
-      value: true
+      value: "true"
     - name: S3_REGION
       value: us-east-1
     - name: PG_UM_DB
       value: uot
     - name: PG_LOGGING
-      value: false
+      value: "false"
     - name: JIRA_ADVANA_PRODUCT
       value: customfield_12719
     - name: SECURE_SESSION
-      value: false
+      value: "false"
     - name: DISABLE_SSO
-      value: true
+      value: "true"
     - name: SERVICE_ACCOUNT_PHONE
       value: 202-555-0134
     - name: SERVICE_ACCOUNT_ORG
@@ -460,9 +460,9 @@ web:
     - name: SERVICE_ACCOUNT_ENV
       value: NIPR
     - name: DISABLE_FRONT_END_CONFIG
-      value: false
+      value: "false"
     - name: REACT_APP_GC_DECOUPLED
-      value: true
+      value: "true"
     - name: REACT_APP_ROOT_CLONE
       value: gamechanger
     - name: REACT_APP_NODE_ENV
@@ -494,13 +494,13 @@ web:
     - name: REACT_APP_CLASSIFICATION_BANNER_COLOR
       value: GREEN
     - name: EXPRESS_TRUST_PROXY
-      value: true
+      value: "true"
     - name: REACT_APP_JEXNET_LINK
       value: https://jexnet.dev.advana.boozallencsn.com/
     - name: DATA_CATALOG_HOST
-      value: 10.194.9.123
+      value: "10.194.9.123"
     - name: DATA_CATALOG_PORT
-      value: 8443
+      value: "8443"
     - name: REACT_APP_SUPPORT_HREF
       value: https://support.advana.data.mil/plugins/servlet/desk/portal/5/create/113
     - name: REACT_APP_WIKI_HREF
@@ -1063,7 +1063,7 @@ minio:
   # Number of drives attached to a node
   drivesPerNode: 1
   # Number of MinIO containers running
-  replicas: 4
+  replicas: 1
   # Number of expanded MinIO clusters
   pools: 1
 
@@ -1113,7 +1113,7 @@ minio:
     storageClass: ""
     VolumeName: ""
     accessMode: ReadWriteOnce
-    size: 500Gi
+    size: 100Gi
 
     ## If subPath is set mount a sub folder of a volume instead of the root of the volume.
     ## This is especially handy for volume plugins that don't natively support sub mounting (like glusterfs).
