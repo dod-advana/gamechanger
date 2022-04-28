@@ -44,7 +44,7 @@ Returns first hostname of either given or subchart es hosts; since templates onl
 {{- end -}}
 
 {{/*
-Return true if an authentication credentials secret object should be created
+Create a secret when we're not using a subchart, i.e. external es, and we don't provide an existing secret
 */}}
 {{- define "app.elasticsearch.createSecret" -}}
 {{- if and .Values.elasticsearch.security.enabled (not .Values.elasticsearch.security.existingSecret) (not .Values.elasticsearch.asSubchart) }}
@@ -56,7 +56,7 @@ Return true if an authentication credentials secret object should be created
 Return the Elasticsearch authentication credentials secret name
 */}}
 {{- define "app.elasticsearch.secretName" -}}
-{{- coalesce .Values.elasticsearch.security.existingSecret (include "app.elasticsearch.fullname" .) -}}-crt
+{{- coalesce .Values.elasticsearch.security.existingSecret (include "app.elasticsearch.fullname" .) -}}
 {{- end -}}
 
 {{- define "app.elasticsearch.security.envVars" -}}

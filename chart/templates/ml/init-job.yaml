@@ -12,6 +12,8 @@ metadata:
   {{- if .Values.commonAnnotations }}
   annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
   {{- end }}
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
   namespace: {{ .Release.Namespace }}
 spec:
   template:
@@ -25,6 +27,7 @@ spec:
       {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 8 }}
       {{- end }}
     spec:
+      restartPolicy: OnFailure
       serviceAccountName: {{ include "app.ml.serviceAccountName" . }}
       {{- with .Values.podSecurityContext }}
       securityContext:
@@ -59,5 +62,4 @@ spec:
             - secretRef:
                 name: {{ include "common.tplvalues.render" ( dict "value" .Values.ml.extraEnvVarsSecret "context" $ ) }}
             {{- end }}
-      restartPolicy: Never
 {{- end }}

@@ -72,7 +72,7 @@ Get the global configuration ConfigMap name.
 {{- if .Values.configMapName -}}
 {{- printf "%s" (tpl .Values.configMapName $) -}}
 {{- else -}}
-{{- printf "%s-config" (include "common.names.chart" .) -}}
+{{- printf "%s-env" (include "common.names.chart" .) -}}
 {{- end -}}
 {{- end -}}
 
@@ -101,7 +101,7 @@ Get the ml configuration ConfigMap name.
 {{- if .Values.ml.existingConfigMapName -}}
 {{- printf "%s" (tpl .Values.ml.existingConfigMapName $) -}}
 {{- else -}}
-{{- printf "%s-config" (include "app.ml.name" .) -}}
+{{- printf "%s-env" (include "app.ml.name" .) -}}
 {{- end -}}
 {{- end -}}
 
@@ -173,7 +173,7 @@ Get the web configuration ConfigMap name.
 {{- if .Values.web.existingConfigMapName -}}
 {{- printf "%s" (tpl .Values.web.existingConfigMapName $) -}}
 {{- else -}}
-{{- printf "%s-config" (include "app.web.name" .) -}}
+{{- printf "%s-env" (include "app.web.name" .) -}}
 {{- end -}}
 {{- end -}}
 
