@@ -116,7 +116,6 @@ Create the name of the service account to use for ml
 {{- include "common.names.fullname" . }}
 {{- end }}
 {{- end }}
-
 {{/*
 One Time Job Name
 */}}

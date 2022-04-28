@@ -53,7 +53,7 @@ declare -A SERVICE_VAR_DIR_MAP=(\
 
 function compose_wrapper() (
   export NPM_AUTH_TOKEN="${NPM_AUTH_TOKEN:-}"
-  docker-compose \
+  nerdctl compose \
     --project-directory "${REPO_DIR}" \
     --env-file "${DEPLOY_COMPOSE_DIR}/.env" \
     --file "${DEPLOY_COMPOSE_DIR}/common.yaml" \

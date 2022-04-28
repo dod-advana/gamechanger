@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.ml" . }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: ml
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.ml.service.type }}
+  ports:
+    - name: ml-http
+      port: {{ .Values.ml.service.ports.http }}
+      targetPort: http
+      protocol: TCP
+      {{- if and (or (eq .Values.ml.service.type "NodePort") (eq .Values.ml.service.type "LoadBalancer")) (not (empty .Values.ml.service.nodePorts.http)) }}
+      nodePort: {{ .Values.ml.service.nodePorts.http }}
+      {{- else if eq .Values.ml.service.type "ClusterIP" }}
+      nodePort: null
+      {{- end }}
+    {{- if .Values.ml.httpsProxy.enabled }}
+    - name: ml-https
+      port: {{ .Values.ml.service.ports.https }}
+      targetPort: https-proxy
+      protocol: TCP
+      {{- if and (or (eq .Values.ml.service.type "NodePort") (eq .Values.ml.service.type "LoadBalancer")) (not (empty .Values.ml.service.nodePorts.https)) }}
+      nodePort: {{ .Values.ml.service.nodePorts.https }}
+      {{- else if eq .Values.ml.service.type "ClusterIP" }}
+      nodePort: null
+      {{- end }}
+    {{- end }}
+    {{- if .Values.ml.service.extraPorts }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.ml.service.extraPorts "context" $) | nindent 4 }}
+    {{- end }}
+  selector: {{- include "common.labels.matchLabels" $ | nindent 4 }}
