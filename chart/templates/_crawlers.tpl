@@ -6,6 +6,13 @@
 {{- end -}}
 {{- end }}
 
+{{- define "app.crawlers.restartPolicy" }}
+{{- if .current.restartPolicy }}
+  {{- .current.restartPolicy }}
+{{- else -}}
+  {{- .default.restartPolicy }}
+{{- end -}}
+{{- end }}
 
 {{- define "app.crawlers.PYTHON_CMD" }}
 {{- if .current.PYTHON_CMD }}

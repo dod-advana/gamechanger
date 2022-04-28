@@ -121,7 +121,7 @@ Create the name of the service account to use for ml
 One Time Job Name
 */}}
 {{- define "app.ml.initJobName" }}
-  {{- printf "%s.%s.%s" (include "common.names.fullname" .) "one-time-job" (now | date "20060102-150405") }}
+  {{- printf "%s-ml.%s.%s" (include "common.names.fullname" .) "one-time-job" (now | date "20060102-150405") }}
 {{- end }}
 
 # gc-web-component names
@@ -149,6 +149,12 @@ Create the external web url, with protocol, for external hosts/clients
 {{- end -}}
 {{- end -}}
 
+{{/*
+One Time Job Name
+*/}}
+{{- define "app.web.initJobName" }}
+  {{- printf "%s-web.%s.%s" (include "common.names.fullname" .) "one-time-job" (now | date "20060102-150405") }}
+{{- end }}
 
 {{/*
 Create the name of the service account to use for web

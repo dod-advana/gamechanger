@@ -57,7 +57,8 @@ spec:
         - name: init-web
           image: {{ template "app.web.init.container.image" . }}
           imagePullPolicy: {{ .Values.web.image.pullPolicy | quote }}
-          command: 
+          command: ["/bin/bash", "-c"]
+          args: 
             - |
               {{- .Values.web.init.container.script | trim | nindent 16 }}
           {{- with .Values.web.appContainerSecurityContext }}

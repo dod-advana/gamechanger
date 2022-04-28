@@ -68,7 +68,8 @@ spec:
           {{- with .Values.ml.image.pullPolicy }}
           imagePullPolicy: {{ . | quote }}
           {{- end }}
-          command: 
+          command: ["/bin/bash", "-c"]
+          args: 
             - |
               {{- .Values.ml.init.container.script | trim | nindent 16 }}
           {{- with .Values.ml.appContainerSecurityContext }}

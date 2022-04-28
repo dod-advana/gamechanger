@@ -17,12 +17,13 @@ spec:
     spec:
       template:
         spec:
+          restartPolicy: {{ include "app.crawlers.restartPolicy" (dict "current" . "default" $defaultJobConfigs) | quote }}
           # init container to pull latest aws-cli cacerts.pem and combine with
           # configmap's cacerts.pem, then store in /tmp directory as shared volume with
           # the cronjob containers
           initContainers:
             - name: append-certs
-              image: amazon/aws-cli
+              image: {{ template "app.crawlers.init.image" $ }}
               command:
                 - /bin/sh
                 - -c
@@ -72,7 +73,7 @@ spec:
                 - name: "SLACK_HOOK_URL"
                   valueFrom:
                     secretKeyRef:
-                      name: {{ include "app.crawlers.secretName" . }}
+                      name: {{ include "app.crawlers.secretName" $ }}
                       key: "SLACK_HOOK_URL"
                 - name: "UPLOAD_LOGS"
                   value: {{ include "app.crawlers.UPLOAD_LOGS" (dict "current" . "default" $defaultJobConfigs) | quote }}
@@ -82,25 +83,14 @@ spec:
                   value: {{ include "app.crawlers.ENDPOINT_URL" (dict "current" . "default" $defaultJobConfigs) | quote }}
                 - name: "AWS_DEFAULT_REGION"
                   value: {{ include "app.crawlers.AWS_DEFAULT_REGION" (dict "current" . "default" $defaultJobConfigs) | quote }}
-              lifecycle:
-                postStart:
-                  exec: 
-                    command:
-                      - "/bin/sh"
-                      - -c
-                      - >
-                        if [ -s /tmp/certificates/cacert.pem ]; then
-                        /tmp/certificates/cacert.pem >> /usr/local/aws-cli/v2/current/dist/awscli/botocore/cacert.pem;
-                        fi;
-              # command: 
-              # - 
-              # restartPolicy: {{ .restartPolicy }}
               volumeMounts:
                 - name: local-spider-list
                   mountPath: /etc/crawler_schedule
-                - name: certificates-configmap
+                - name: tmp
                   mountPath: /tmp/certificates
           volumes:
+            - name: tmp
+              emptyDir: {}
             - name: local-spider-list
               configMap:
                 name: crawlers-configmap

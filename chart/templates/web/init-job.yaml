@@ -1,0 +1,63 @@
+{{- if .Values.web.init.job.enabled  }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  {{- /* initJobName changes every time the script runs. which forced existing jobs and pods to be deleted and thereby works around issue with helm upgrade refusing to modify existing job object */}}
+  name: {{ include "app.web.initJobName" . }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: web-otj
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  template:
+    metadata:
+      annotations:
+        {{- with .Values.podAnnotations -}}{{- toYaml . | nindent 8 }}{{- end }}
+      labels:
+      {{- include "common.labels.standard" . | nindent 8 }}
+        app.kubernetes.io/component: web-otj
+      {{- if .Values.commonLabels }}
+      {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "app.web.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: init-scripts
+          image: {{ template "app.web.init.job.image" . }}
+          imagePullPolicy: {{ .Values.web.image.pullPolicy }}
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              {{- .Values.web.init.job.script | trim | nindent 16 }}
+          {{- with .Values.appContainerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            - name: APP_VERSION
+              value: {{ default "1.0.0" .Chart.AppVersion | quote }}
+          {{- if .Values.web.extraEnvVars }}
+            {{- include "common.tplvalues.render" ( dict "value" .Values.web.extraEnvVars "context" $ ) | nindent 12 }}
+          {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "app.web.configMapName" .  | quote }}
+            {{- if .Values.web.extraEnvVarsCM }}
+            - configMapRef:
+                name: {{ include "common.tplvalues.render" ( dict "value" .Values.web.extraEnvVarsCM "context" $ ) }}
+            {{- end }}
+            {{- if .Values.web.extraEnvVarsSecret }}
+            - secretRef:
+                name: {{ include "common.tplvalues.render" ( dict "value" .Values.web.extraEnvVarsSecret "context" $ ) }}
+            {{- end }}
+      restartPolicy: Never
+{{- end }}

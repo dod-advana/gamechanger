@@ -26,8 +26,8 @@ metadata:
     ncp/http-redirect: "true"
     {{- end }}
   {{- end }}
-  {{- if .Values.ingress.annotations }}
-    {{- include "common.tplvalues.render" (dict "value" .Values.ingress.annotations "context" .) | nindent 4 }}
+  {{- if .Values.ingress.ml.annotations }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.ingress.ml.annotations "context" .) | nindent 4 }}
   {{- end }}
   {{- if .Values.commonAnnotations }}
     {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" .) | nindent 4 }}

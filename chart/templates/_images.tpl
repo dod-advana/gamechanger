@@ -149,7 +149,7 @@ Return the proper app ml image name (based on .Values.x.image block)
 Return the proper default crawlers cronjob image name 
 */}}
 {{- define "app.crawlers.default.image" -}}
-{{ include "common.images.image" (dict "imageRoot" .Values.crawlers.defaultCronJobImage "global" .Values.global) }}
+{{ include "common.images.image" (dict "imageRoot" .Values.crawlers.defaultJobConfigs.image "global" .Values.global) }}
 {{- end -}}
 
 {{/*
@@ -162,4 +162,9 @@ Return the proper crawlers cronjob image name
 {{- printf "%s" .default -}}
 {{- end -}}
 {{- end -}}
-
+{{/*
+Return the proper crawlers cronjob image name 
+*/}}
+{{- define "app.crawlers.init.image" -}}
+{{ include "common.images.image" (dict "imageRoot" .Values.crawlers.defaultJobConfigs.initImage "global" .Values.global) }}
+{{- end -}}
