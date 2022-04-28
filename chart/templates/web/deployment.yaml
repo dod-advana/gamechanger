@@ -74,6 +74,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "app.web.configMapName" .  | quote }}
+            - secretRef:
+                name: {{ include "app.web.secretName" .  | quote }}
             {{- if .Values.web.extraEnvVarsCM }}
             - configMapRef:
                 name: {{ include "common.tplvalues.render" ( dict "value" .Values.web.extraEnvVarsCM "context" $ ) }}

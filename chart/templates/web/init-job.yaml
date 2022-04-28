@@ -45,12 +45,18 @@ spec:
           env:
             - name: APP_VERSION
               value: {{ default "1.0.0" .Chart.AppVersion | quote }}
+          {{- if .Values.elasticsearch.security.enabled }}
+            {{- include "app.elasticsearch.security.envVars" . | nindent 12 }}
+          {{- end }}
+          {{- include "app.postgresql.security.envVars" . | nindent 12 }}          
           {{- if .Values.web.extraEnvVars }}
             {{- include "common.tplvalues.render" ( dict "value" .Values.web.extraEnvVars "context" $ ) | nindent 12 }}
           {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "app.web.configMapName" .  | quote }}
+            - secretRef:
+                name: {{ include "app.web.secretName" .  | quote }}
             {{- if .Values.web.extraEnvVarsCM }}
             - configMapRef:
                 name: {{ include "common.tplvalues.render" ( dict "value" .Values.web.extraEnvVarsCM "context" $ ) }}

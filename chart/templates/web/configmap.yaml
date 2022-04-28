@@ -36,3 +36,5 @@ data:
   GAMECHANGER_ELASTICSEARCH_CA_FILEPATH: "/etc/secrets/gamechanger.crt"
   EDA_ELASTICSEARCH_CA_FILEPATH: "/etc/secrets/gamechanger.crt"
   SERVICE_ACCOUNT_EMAIL: ""
+  REQUEST_ORIGIN_ALLOWED: "*.{{ .Values.externalDomain | default "dev.advana.boozallencsn.com" }}"
+  

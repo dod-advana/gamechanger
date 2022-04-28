@@ -10,3 +10,4 @@ deploy/new.sh
 deploy/docker-compose/combined.yaml
 *.DS_Store
 deploy/docker-compose/.env
+dev.values.yaml

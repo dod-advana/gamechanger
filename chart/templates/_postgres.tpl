@@ -27,7 +27,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- define "app.postgresql.username" -}}
 {{- $name := default "postgres" .Values.postgresql.user -}}
   {{- if .Values.postgresql.asSubchart -}}
-    {{- include "postgresql.username" .Subcharts.postgresql  -}}
+    {{- default $name (include "postgresql.username" .Subcharts.postgresql)  -}}
   {{- else -}}
     {{- $name -}}
   {{- end -}}
@@ -63,5 +63,5 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
     secretKeyRef:
       name: {{ include "postgresql.secretName" .Subcharts.postgresql }}
       key: postgres-password
-{{- end -}}      
+{{- end -}}
 {{- end -}}

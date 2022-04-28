@@ -385,6 +385,7 @@ web:
         tag: "latest"
       script: |
         _urlenc_pass=$(2>/dev/null node -e "console.log(encodeURIComponent(process.env.POSTGRES_PASSWORD_GAME_CHANGER))")
+        env
         sequelize db:migrate \
           --options-path ./.sequelize-game_changer \
           --env game_changer \
@@ -443,8 +444,6 @@ web:
       value: "500"
     - name: MAX_GRAPH_VIEW_NODES_DISPLAYED
       value: "5000"
-    - name: REQUEST_ORIGIN_ALLOWED
-      value: "*.dev.advana.boozallencsn.com"
     - name: REACT_APP_COOKIE_DOMAIN
       value: "dev.advana.boozallencsn.com"
     - name: CDO_ELASTICSEARCH_INDEX
@@ -529,7 +528,6 @@ web:
       value: http://10.194.9.109:8080
     - name: REACT_APP_DATA_CATALOG_LINK
       value: http://10.194.9.123:8443
-
     # can be templated
     - name: EDA_ELASTICSEARCH_PROTOCOL
       value: https
@@ -1170,7 +1168,7 @@ minio:
     - name: gamechangerwrite
       statements:
         - resources:
-            - "arn:aws:s3:::gamechanger*/*"
+            - "arn:aws:s3:::advana-data-zone*/*"
           actions:
             - "s3:AbortMultipartUpload"
             - "s3:GetObject"
@@ -1178,7 +1176,7 @@ minio:
             - "s3:PutObject"
             - "s3:ListMultipartUploadParts"
         - resources:
-            - "arn:aws:s3:::gamechanger*"
+            - "arn:aws:s3:::advana-data-zone*"
           actions:
             - "s3:CreateBucket"
             - "s3:DeleteBucket"
@@ -1190,11 +1188,11 @@ minio:
     - name: gamechangerreadonly
       statements:
         - resources:
-            - "arn:aws:s3:::gamechanger*/*"
+            - "arn:aws:s3:::advana-data-zone*/*"
           actions:
             - "s3:GetObject"
         - resources:
-            - "arn:aws:s3:::gamechanger*"
+            - "arn:aws:s3:::advana-data-zone*"
           actions:
             - "s3:GetBucketLocation"
             - "s3:ListBucket"
@@ -1223,7 +1221,7 @@ minio:
   ## List of buckets to be created after minio install
   ##
   buckets:
-    - name: gamechanger
+    - name: advana-data-zone
       policy: none
       versioning: true
     #   # Name of the bucket
