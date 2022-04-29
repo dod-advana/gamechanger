@@ -20,7 +20,7 @@
 # Deploying GAMECHANGER
 In recognition of the various applicable use-cases, we've designed this chart to allow for integration with external service providers while also accomodating deployments into greenfield Kubernetes environments. The default `values.yaml` settings assume a greenfield deployment, and will deploy and configure all dependencies on the target cluster.
 
-To disable these third party components and configure external services, ensure `external{component-name}.*` settings are set to appropriate values while `{component-name}.enabled` is set to `false`. 
+To disable these third party components and configure external services, ensure `{component-name}.*` settings (such as host/port, authentication, etc) are set to appropriate values while `{component-name}.asSubChart` is set to `false`. 
 
 ## Minio/s3 settings
 - root user creds

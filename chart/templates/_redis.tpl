@@ -43,8 +43,8 @@ Return Redis&trade; password
 */}}
 {{- define "app.redis.password" -}}
 {{- if .Values.redis.asSubchart -}}
-{{- include "redis.password" .Subchart.redis  -}}
-{{- else if not (empty .Values.redis.auth.password) }}
+{{- include "redis.password" .Subcharts.redis  -}}
+{{- else if .Values.redis.auth.password }}
 {{- .Values.redis.auth.password -}}    
 {{- end -}}
 {{- end -}}
@@ -55,7 +55,7 @@ Get the password secret.
 */}}
 {{- define "app.redis.secretName" -}}
 {{- if .Values.redis.asSubchart -}}
-{{- include "redis.secretName" .Subchart.redis  -}}
+{{- include "redis.secretName" .Subcharts.redis  -}}
 {{- else -}}
 {{- printf "%s" .Values.redis.auth.existingSecret -}}
 {{- end -}}
@@ -66,7 +66,7 @@ Get the password key to be retrieved from Redis&trade; secret.
 */}}
 {{- define "app.redis.secretPasswordKey" -}}
 {{- if .Values.redis.asSubchart -}}
-{{- include "redis.secretPasswordKey" .Subchart.redis  -}}
+{{- include "redis.secretPasswordKey" .Subcharts.redis  -}}
 {{- else if and .Values.redis.auth.existingSecret .Values.redis.auth.existingSecretPasswordKey -}}
 {{- printf "%s" .Values.redis.auth.existingSecretPasswordKey -}}
 {{- end -}}

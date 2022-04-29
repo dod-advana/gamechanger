@@ -94,6 +94,9 @@ Get the global configuration ConfigMap name.
   {{ printf "%s.%s.svc.%s" (include "app.ml.name" .) .Release.Namespace .Values.clusterDomain }}
 {{- end -}}
 
+{{- define "app.ml.port" -}}
+{{ .Values.ml.service.ports.http }}
+{{- end -}}
 {{/*
 Get the ml configuration ConfigMap name.
 */}}
@@ -120,12 +123,20 @@ Create the name of the service account to use for ml
 One Time Job Name
 */}}
 {{- define "app.ml.initJobName" }}
-  {{- printf "%s-ml.%s.%s" (include "common.names.fullname" .) "one-time-job" (now | date "20060102-150405") }}
+  {{- printf "%s-ml.%s" (include "common.names.fullname" .) "one-time-job" }}
 {{- end }}
 
 # gc-web-component names
 {{- define "app.web.name" -}}
   {{- printf "%s-web" (include "common.names.fullname" .) -}}
+{{- end -}}
+
+{{- define "app.web.host" -}}
+  {{ printf "%s.%s.svc.%s" (include "app.web.name" .) .Release.Namespace .Values.clusterDomain }}
+{{- end -}}
+
+{{- define "app.web.port" -}}
+{{ .Values.web.service.ports.http }}
 {{- end -}}
 
 {{- define "app.web.fqdn" -}}
@@ -152,7 +163,7 @@ Create the external web url, with protocol, for external hosts/clients
 One Time Job Name
 */}}
 {{- define "app.web.initJobName" }}
-  {{- printf "%s-web.%s.%s" (include "common.names.fullname" .) "one-time-job" (now | date "20060102-150405") }}
+  {{- printf "%s-web.%s" (include "common.names.fullname" .) "one-time-job" }}
 {{- end }}
 
 {{/*

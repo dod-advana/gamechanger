@@ -9,9 +9,7 @@ metadata:
     {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
     {{- end }}
     app.kubernetes.io/component: web-otj
-  {{- if .Values.commonAnnotations }}
-  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
-  {{- end }}
+  annotations: 
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
   namespace: {{ .Release.Namespace }}
@@ -33,6 +31,12 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      volumes:
+        {{- if .Values.web.tls.enabled }}
+        - name: tls-secret-files
+          secret:
+            secretName: {{ include "app.web.tlsSecretName" .  | quote }}
+        {{- end }}
       containers:
         - name: init-scripts
           image: {{ template "app.web.init.job.image" . }}
@@ -67,5 +71,11 @@ spec:
             {{- if .Values.web.extraEnvVarsSecret }}
             - secretRef:
                 name: {{ include "common.tplvalues.render" ( dict "value" .Values.web.extraEnvVarsSecret "context" $ ) }}
+            {{- end }}
+          volumeMounts:
+            {{- if .Values.web.tls.enabled }}
+            - name: tls-secret-files
+              mountPath: {{ .Values.web.tls.mountPath }}
+              readOnly: true
             {{- end }}
 {{- end }}

@@ -66,6 +66,11 @@ Return the Elasticsearch authentication credentials secret name
     secretKeyRef:
       name: {{ include "elasticsearch.secretName" .Subcharts.elasticsearch }}
       key: elasticsearch-password
+- name: ES_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "elasticsearch.secretName" .Subcharts.elasticsearch }}
+      key: elasticsearch-password
 - name: GAMECHANGER_ELASTICSEARCH_CA
   valueFrom:
     secretKeyRef:
@@ -83,6 +88,11 @@ Return the Elasticsearch authentication credentials secret name
       key: ca.crt
 {{- else -}}
 - name: GAMECHANGER_ELASTICSEARCH_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ template "app.elasticsearch.secretName" . }}
+      key: elasticsearch-password
+- name: ES_PASSWORD
   valueFrom:
     secretKeyRef:
       name: {{ template "app.elasticsearch.secretName" . }}

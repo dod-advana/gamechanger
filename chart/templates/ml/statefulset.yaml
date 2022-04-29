@@ -90,6 +90,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "app.ml.configMapName" .  | quote }}
+            - secretRef:
+                name: {{ include "app.ml.secretName" .  | quote }}
             {{- if .Values.ml.extraEnvVarsCM }}
             - configMapRef:
                 name: {{ include "common.tplvalues.render" ( dict "value" .Values.ml.extraEnvVarsCM "context" $ ) }}
@@ -123,6 +125,10 @@ spec:
           env:
             - name: APP_VERSION
               value: {{ default "1.0.0" .Chart.AppVersion | quote }}
+            - name: GC_ML_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           {{- if .Values.elasticsearch.security.enabled }}
           {{- include "app.elasticsearch.security.envVars" . | nindent 12 }}
           {{- end }}
@@ -132,6 +138,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "app.ml.configMapName" .  | quote }}
+            - secretRef:
+                name: {{ include "app.ml.secretName" .  | quote }}
             {{- if .Values.ml.extraEnvVarsCM }}
             - configMapRef:
                 name: {{ include "common.tplvalues.render" ( dict "value" .Values.ml.extraEnvVarsCM "context" $ ) }}

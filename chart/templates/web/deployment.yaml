@@ -33,7 +33,6 @@ spec:
         {{- with .Values.web.podAnnotations -}}{{- toYaml . | nindent 8 }}{{- end }} 
       labels:
       {{- include "common.labels.standard" . | nindent 8 }}
-        role: web
         app.kubernetes.io/component: web
       {{- if .Values.commonLabels }}
       {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 8 }}
@@ -72,10 +71,10 @@ spec:
             {{- include "common.tplvalues.render" ( dict "value" .Values.web.extraEnvVars "context" $ ) | nindent 12 }}
           {{- end }}
           envFrom:
-            - configMapRef:
-                name: {{ include "app.web.configMapName" .  | quote }}
             - secretRef:
                 name: {{ include "app.web.secretName" .  | quote }}
+            - configMapRef:
+                name: {{ include "app.web.configMapName" .  | quote }}
             {{- if .Values.web.extraEnvVarsCM }}
             - configMapRef:
                 name: {{ include "common.tplvalues.render" ( dict "value" .Values.web.extraEnvVarsCM "context" $ ) }}
@@ -83,6 +82,11 @@ spec:
             {{- if .Values.web.extraEnvVarsSecret }}
             - secretRef:
                 name: {{ include "common.tplvalues.render" ( dict "value" .Values.web.extraEnvVarsSecret "context" $ ) }}
+            {{- end }}
+          volumeMounts:
+            {{- if .Values.web.tls.enabled }}
+            - name: tls-secret-files
+              mountPath: {{ .Values.web.tls.mountPath }}
             {{- end }}
       {{- end }}
       containers:
@@ -112,8 +116,14 @@ spec:
             {{- include "common.tplvalues.render" ( dict "value" .Values.web.extraEnvVars "context" $ ) | nindent 12 }}
           {{- end }}
           envFrom:
+            - secretRef:
+                name: {{ include "app.web.secretName" .  | quote }}
             - configMapRef:
                 name: {{ include "app.web.configMapName" .  | quote }}
+            {{- if (include "app.neo4j.createSecret" .) }}
+            - secretRef:
+                name: {{ include "app.neo4j.secretName" . }}
+            {{- end }}
             {{- if .Values.web.extraEnvVarsCM }}
             - configMapRef:
                 name: {{ include "common.tplvalues.render" ( dict "value" .Values.web.extraEnvVarsCM "context" $ ) }}
@@ -134,3 +144,9 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          volumeMounts:
+            {{- if ((include "app.web.createTlsSecret" .)) }}
+            - name: tls-secret-files
+              mountPath: {{ .Values.web.tls.mountPath }}
+              readOnly: true
+            {{- end }}
