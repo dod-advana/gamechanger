@@ -85,3 +85,68 @@
   {{- .default.ENDPOINT_URL }}
 {{- end -}}
 {{- end }}
+
+{{- define "app.crawlers.CRAWLER_OUTPUT_LOCATION" }}
+{{- if .current.CRAWLER_OUTPUT_LOCATION }}
+  {{- .current.CRAWLER_OUTPUT_LOCATION }}
+{{- else -}}
+  {{- .default.CRAWLER_OUTPUT_LOCATION }}
+{{- end -}}
+{{- end }}
+
+{{- define "app.crawlers.DELETE_AFTER_UPLOAD" }}
+{{- if .current.DELETE_AFTER_UPLOAD }}
+  {{- .current.DELETE_AFTER_UPLOAD }}
+{{- else -}}
+  {{- .default.DELETE_AFTER_UPLOAD }}
+{{- end -}}
+{{- end }}
+
+{{- define "app.crawlers.S3_UPLOAD_BASE_PATH" }}
+{{- if .current.S3_UPLOAD_BASE_PATH }}
+  {{- .current.S3_UPLOAD_BASE_PATH }}
+{{- else -}}
+  {{- .default.S3_UPLOAD_BASE_PATH }}
+{{- end -}}
+{{- end }}
+
+{{- define "app.crawlers.SKIP_S3_UPLOAD" }}
+{{- if .current.SKIP_S3_UPLOAD }}
+  {{- .current.SKIP_S3_UPLOAD }}
+{{- else -}}
+  {{- .default.SKIP_S3_UPLOAD }}
+{{- end -}}
+{{- end }}
+
+{{- define "app.crawlers.BUCKET" }}
+{{- if .current.BUCKET }}
+  {{- .current.BUCKET }}
+{{- else -}}
+  {{- .default.BUCKET }}
+{{- end -}}
+{{- end }}
+
+
+{{- define "app.crawlers.downloadDirectoryVolumeConfig.name" }}
+{{- if .current.downloadDirectoryVolumeConfig }}
+    {{- include .current.downloadDirectoryVolumeConfig.name -}}
+{{- else -}}
+    {{- .default.downloadDirectoryVolumeConfig.name -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "app.crawlers.downloadDirectoryVolumeConfig.claimName" }}
+{{- if .current.downloadDirectoryVolumeConfig }}
+    {{- include .current.downloadDirectoryVolumeConfig.claimName -}}
+{{- else -}}
+    {{- .default.downloadDirectoryVolumeConfig.claimName -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "app.crawlers.downloadDirectoryVolumeConfig.mountPath" }}
+{{- if .current.downloadDirectoryVolumeConfig }}
+    {{- include .current.downloadDirectoryVolumeConfig.mountPath -}}
+{{- else -}}
+    {{- .default.downloadDirectoryVolumeConfig.mountPath -}}
+{{- end -}}
+{{- end -}}
