@@ -572,20 +572,34 @@ crawlers:
       repository: "amazon/aws-cli"
       pullPolicy: Always
       tag: "latest"
-    # LOCAL_PREVIOUS_MANIFEST_LOCATION - directory where previous-manifest.json lives. defaults to cronjob's run_job.sh parent directory
+    # LOCAL_PREVIOUS_MANIFEST_LOCATION - directory where previous-manifest.json lives to filter out previously downloaded files from being downloaded again
+    # to pull this file, might need to create more jobs for loading and updating
     LOCAL_PREVIOUS_MANIFEST_LOCATION:
-    # TEST_RUN - if "yes", then the only spider to be run is us_code_spider.py
-    TEST_RUN: "yes"
-    # SEND_NOTIFICATIONS - if "yes", then should send notification to slack channel. part of job_runner.sh wrapper and not implemented yet for cronjobs.
-    SEND_NOTIFICATIONS: "no"
-    # SLACK_HOOK_CHANNEL - name of slack channel to send notifications to. make sure to set env var SLACK_HOOK_URL in a secret ("SLACK_SECRETS"?)
-    SLACK_HOOK_CHANNEL: "#gc-alerts-dev"
-    # UPLOAD_LOGS - if "yes", then uploads local logs to s3 log bucket
-    UPLOAD_LOGS: "no"
-    # S3_BASE_LOG_PATH_URL - base url for log bucket
-    S3_BASE_LOG_PATH_URL: "s3://somebucket/someplace"
-    # ENDPOINT_URL - if not using AWS default S3 endpoint, then set to new url, ex: s3.minio.lab.boozallencsn.com
-    ENDPOINT_URL: "s3.lab.boozallencsn.com"
+    # LOCAL_DOWNLOAD_DIRECTORY_PATH: path for files to be downloaded to and scanned,
+    # can also specify a different location for each schedule so that other schedules' files arent scanned repeatedly if not deleted
+    LOCAL_DOWNLOAD_DIRECTORY_PATH: "/app/tmp/downloads"
+    # full path for crawler json output, eg: /app/tmp/output/crawler-output.json
+    CRAWLER_OUTPUT_LOCATION: "/app/tmp/output/crawler-output.json"
+    SKIP_S3_UPLOAD: "yes"
+    DELETE_AFTER_UPLOAD: "no"
+    # S3_UPLOAD_BASE_PATH: S3 base path for final uploads sans bucket name
+    S3_UPLOAD_BASE_PATH: "s3://somebucket/someplace"
+    # BUCKET: bucket that exists in the S3_UPLOAD_BASE_PATH location
+    BUCKET: "yourbucket"
+
+    # Define the volume and mountpath that will be mounted to the crawler-downloader cronjob, the PV/PVC should already exist
+    # Set the mountPath and LOCAL_DOWNLOAD_DIRECTORY_PATH as the same path to persist the downloaded files from the job
+    downloadDirectoryVolumeConfig:
+      name: "crawler-downloads-volume"
+      claimName: "crawler-downloads-claim"
+      mountPath: "/app/tmp/downloads"
+    #  # SEND_NOTIFICATIONS - if "yes", then should send notification to slack channel. part of job_runner.sh wrapper and not implemented yet for cronjobs.
+    # SEND_NOTIFICATIONS: "no"
+    # # SLACK_HOOK_CHANNEL - name of slack channel to send notifications to. make sure to set env var SLACK_HOOK_URL in a secret ("SLACK_SECRETS"?)
+    # SLACK_HOOK_CHANNEL: "#gc-alerts-dev"
+    # # UPLOAD_LOGS - if "yes", then uploads local logs to s3 log bucket
+    # UPLOAD_LOGS: "no"
+    # S3_UPLOAD_BASE_PATH - s3 base url (upload path without bucket) for uploading scanned files
 
   cacerts:
     - "test123"

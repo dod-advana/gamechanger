@@ -37,66 +37,72 @@ spec:
                   mountPath: /tmp/certificates
                 - name: certificates-configmap
                   mountPath: /etc/certificates
+            - name: {{ .name }}-crawl-download
+              image: {{ template "app.crawlers.image" (dict "current" . "default" $defaultImage) }}
+              command: "crawl"
+              env: 
+                - name: "GC_CRAWL_SPIDERS_FILE_LOCATION"
+                  value: "/etc/crawler_schedule/{{ .name }}.txt"
+                - name: "GC_CRAWL_DOWNLOAD_OUTPUT_DIR" 
+                  value: {{ include "app.crawlers.LOCAL_DOWNLOAD_DIRECTORY_PATH" (dict "current" . "default" $defaultJobConfigs) | quote }}
+                - name: "GC_CRAWL_PREVIOUS_MANIFEST_LOCATION"
+                  value: {{ include "app.crawlers.LOCAL_PREVIOUS_MANIFEST_LOCATION" (dict "current" . "default" $defaultJobConfigs) | quote }}
+                - name: "GC_CRAWL_SKIP_CONFIRMATION"
+                  value: "y"
+                - name: "GC_CRAWL_CRAWLER_OUTPUT_LOCATION"
+                  value: {{ include "app.crawlers.CRAWLER_OUTPUT_LOCATION" (dict "current" . "default" $defaultJobConfigs) | quote }}
           containers:
-            - name: {{ .name }}-cronjob
+            - name: {{ .name }}-scanner
+              # image for this cronjob should be from gamechanger-crawlers/paasJobs/docker/crawl_and_download/Dockerfile
               image: {{ template "app.crawlers.image" (dict "current" . "default" $defaultImage) }}
               env:
-                  # TODO: remove limitations for thread passed to the script/container and let pod handle max resources
-                - name: "MAX_PARSER_THREADS"
-                  value: {{ .parser_threads | default 68 | int | quote }}
-                - name: "MAX_OCR_THREADS_PER_FILE"
-                  value: {{ .max_ocr_threads | default 1 | int | quote }}
-                - name: "SKIP_NEO4J_UPDATE"
-                  value: {{ .skip_neo4j | default "no" | quote }}
-                - name: "LOCAL_SPIDER_LIST_FILE"
-                  value: "/etc/crawler_schedule/{{ .name }}.txt"
-                - name: "JOB_NAME"
-                  value: {{ .name | quote }}
-                  # LOCAL_DOWNLOAD_DIRECTORY_PATH: where downloaded files will be placed on local disk (not counting all temporary files in other dir)
-                  # should be some non-temporary, absolute, local download path
-                - name: "LOCAL_DOWNLOAD_DIRECTORY_PATH" 
+                  # SCAN Path should be same as LOCAL_DOWNLOAD_DIRECTORY_PATH? Long-running job, might want to separate download paths for performance
+                - name: "GC_SCAN_INPUT_PATH" 
                   value: {{ include "app.crawlers.LOCAL_DOWNLOAD_DIRECTORY_PATH" (dict "current" . "default" $defaultJobConfigs) | quote }}
-                  # PYTHON_CMD: path to python binary in the venv suitable for this script
-                  # .. by default, job runs in a container where all packages are installed at system-level
-                - name: "PYTHON_CMD"
-                  value: {{ include "app.crawlers.PYTHON_CMD" (dict "current" . "default" $defaultJobConfigs) | quote }}
-                - name: "LOCAL_PREVIOUS_MANIFEST_LOCATION"
-                  value: {{ include "app.crawlers.LOCAL_PREVIOUS_MANIFEST_LOCATION" (dict "current" . "default" $defaultJobConfigs) | quote }}
-                - name: "TEST_RUN"
-                  value: {{ include "app.crawlers.TEST_RUN" (dict "current" . "default" $defaultJobConfigs) | quote }}
+                  # yes|no
+                - name: "DELETE_AFTER_UPLOAD"
+                  value: {{ include "app.crawlers.DELETE_AFTER_UPLOAD" (dict "current" . "default" $defaultJobConfigs) | quote }}
                   # Variables below for slack notification config - used in job_runner.sh
                   # Could move to a configmap and include using envFrom, slack hook URL should also be secret
-                - name: "SEND_NOTIFICATIONS"
-                  value: {{ include "app.crawlers.SEND_NOTIFICATIONS" (dict "current" . "default" $defaultJobConfigs) | quote }}
-                - name: "SLACK_HOOK_CHANNEL"
-                  value: {{ include "app.crawlers.SLACK_HOOK_CHANNEL" (dict "current" . "default" $defaultJobConfigs) | quote }}
-                - name: "SLACK_HOOK_URL"
-                  valueFrom:
-                    secretKeyRef:
-                      name: {{ include "app.crawlers.secretName" $ }}
-                      key: "SLACK_HOOK_URL"
-                - name: "UPLOAD_LOGS"
-                  value: {{ include "app.crawlers.UPLOAD_LOGS" (dict "current" . "default" $defaultJobConfigs) | quote }}
-                - name: "S3_BASE_LOG_PATH_URL"
-                  value: {{ include "app.crawlers.S3_BASE_LOG_PATH_URL" (dict "current" . "default" $defaultJobConfigs) | quote }}
-                - name: "ENDPOINT_URL"
-                  value: {{ include "app.crawlers.ENDPOINT_URL" (dict "current" . "default" $defaultJobConfigs) | quote }}
-                - name: "AWS_DEFAULT_REGION"
-                  value: {{ include "app.crawlers.AWS_DEFAULT_REGION" (dict "current" . "default" $defaultJobConfigs) | quote }}
+                # - name: "SEND_NOTIFICATIONS"
+                #   value: {{ include "app.crawlers.SEND_NOTIFICATIONS" (dict "current" . "default" $defaultJobConfigs) | quote }}
+                # - name: "SLACK_HOOK_CHANNEL"
+                #   value: {{ include "app.crawlers.SLACK_HOOK_CHANNEL" (dict "current" . "default" $defaultJobConfigs) | quote }}
+                # - name: "SLACK_HOOK_URL"
+                #   valueFrom:
+                #     secretKeyRef:
+                #       name: {{ include "app.crawlers.secretName" $ }}
+                #       key: "SLACK_HOOK_URL"
+
+                  # S3 base path for final uploads sans bucket name
+                - name: "S3_UPLOAD_BASE_PATH"
+                  value: {{ include "app.crawlers.S3_UPLOAD_BASE_PATH" (dict "current" . "default" $defaultJobConfigs) | quote }}
+                  # S3 bucket name
+                - name: "BUCKET"
+                  value: 
+                  # yes|no
+                - name: "SKIP_S3_UPLOAD"
+                  value: {{ include "app.crawlers.SKIP_S3_UPLOAD" (dict "current" . "default" $defaultJobConfigs) | quote }}
               volumeMounts:
-                - name: local-spider-list
-                  mountPath: /etc/crawler_schedule
-                - name: tmp
-                  mountPath: /tmp/certificates
+                - name: "local-spider-list"
+                  mountPath: "/etc/crawler_schedule"
+                - name: "tmp"
+                  mountPath: "/tmp/certificates"
+                - name: {{ include "app.crawlers.downloadDirectoryVolumeConfig.name" (dict "current" . "default" $defaultJobConfigs) | quote }}
+                  mountPath: {{ include "app.crawlers.downloadDirectoryVolumeConfig.mountPath" (dict "current" . "default" $defaultJobConfigs) | quote }}
           volumes:
-            - name: tmp
+            - name: "tmp"
               emptyDir: {}
-            - name: local-spider-list
+            - name: "local-spider-list"
               configMap:
-                name: crawlers-configmap
-            - name: certificates-configmap
+                name: "crawlers-configmap"
+            - name: "certificates-configmap"
               configMap:
-                name: certificates-configmap
+                name: "certificates-configmap"
+            - name: {{ include "app.crawlers.downloadDirectoryVolumeConfig.name" (dict "current" . "default" $defaultJobConfigs) | quote }}
+              persistentVolumeClaim:
+                claimName: {{ include "app.crawlers.downloadDirectoryVolumeConfig.claimName" (dict "current" . "default" $defaultJobConfigs) | quote }}
+            
   successfulJobsHistoryLimit: 3
   suspend: false
 {{- end }}
