@@ -32,11 +32,9 @@ data:
   QLIK_SYS_ACCOUNT: {{ .Values.web.qlik.sysAccount | default "" | quote }}
   QLIK_AD_DOMAIN: {{ .Values.web.qlik.adDomain | default "" | quote }}
   PG_DST_DB: "data_api"
-  GAMECHANGER_ELASTICSEARCH_CA_FILEPATH: "/etc/secrets/gamechanger.crt"
-  EDA_ELASTICSEARCH_CA_FILEPATH: "/etc/secrets/gamechanger.crt"
   SERVICE_ACCOUNT_EMAIL: ""
-  REQUEST_ORIGIN_ALLOWED: "*.{{ .Values.externalDomain | default "dev.advana.boozallencsn.com" }}"
-  {{- if ((include "app.web.createTlsSecret" .)) }}
+  REQUEST_ORIGIN_ALLOWED: "*.{{ .Values.externalDomain | default "advana.boozallencsn.com" }}"
+  {{- if .Values.web.tls.enabled }}
   TLS_CERT_FILEPATH: "{{ .Values.web.tls.mountPath }}/{{ .Values.web.tls.certFilename }}"
   TLS_KEY_FILEPATH: "{{ .Values.web.tls.mountPath }}/{{ .Values.web.tls.certKeyFilename }}"
   TLS_CERT_CA_FILEPATH: "{{ .Values.web.tls.mountPath }}/{{ .Values.web.tls.certCAFilename }}"

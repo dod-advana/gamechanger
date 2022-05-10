@@ -268,6 +268,14 @@ ml:
       #   nodePort: 31209
       #   protocol: TCP
       #   name: https
+  # podTolerations - <Array[Map[string, string]]>
+  #   Pod tolerations. Used to make sure pod runs on nodes that are specifically tainted to prevent other pods from
+  #   scheduling there by default. Reference https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  podTolerations:
+    - key: "HighMemory"
+      operator: "Equal"
+      effect: "NoExecute"
+      value: "true"
 
   # podSecurityContext - <Object>
   #   Sets security context for main application and job pods.
@@ -277,11 +285,11 @@ ml:
     fsGroup: 1001
     fsGroupChangePolicy: "OnRootMismatch"
 
-  # appContainerSecurityContext - <Map>
+  # containerSecurityContext - <Map>
   #   Security context for app and job containers.
   #   It's useful to define this to match user-id and group-id of the application and its' files inside container
   #   For more on what goes in here, reference https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container
-  appContainerSecurityContext:
+  containerSecurityContext:
     runAsUser: 1001
     runAsGroup: 1001
 
@@ -308,14 +316,6 @@ ml:
   extraEnvVarsSecret: ""
   # extraEnvVarsCM - existing ConfigMap with extra environment variables
   extraEnvVarsCM: ""
-  # podTolerations - <Array[Map[string, string]]>
-  #   Pod tolerations. Used to make sure pod runs on nodes that are specifically tainted to prevent other pods from
-  #   scheduling there by default. Reference https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
-  podTolerations:
-    - key: "HighMemory"
-      operator: "Equal"
-      effect: "NoExecute"
-      value: "true"
 
   tls:
     enabled: true
@@ -352,17 +352,7 @@ web:
         repository: "advana/gamechanger/gamechanger-web"
         tag: "latest"
       script: |
-        _urlenc_pass=$(2>/dev/null node -e "console.log(encodeURIComponent(process.env.POSTGRES_PASSWORD_GAME_CHANGER))")
-        sequelize db:migrate \
-          --options-path ./.sequelize-game_changer \
-          --env game_changer \
-          --url "postgresql://${POSTGRES_USER_GAME_CHANGER}:${_urlenc_pass}@${POSTGRES_HOST_GAME_CHANGER}/game_changer"
-
-        _urlenc_pass=$(2>/dev/null node -e "console.log(encodeURIComponent(process.env.POSTGRES_PASSWORD_GC_ORCHESTRATION))")
-        sequelize db:migrate \
-          --options-path ./.sequelize-gc-orchestration \
-          --env gc_orchestration \
-          --url "postgresql://${POSTGRES_USER_GC_ORCHESTRATION}:${_urlenc_pass}@${POSTGRES_HOST_GC_ORCHESTRATION}/gc-orchestration"
+        echo hi
     # runs once per chart release as a k8s job
     job:
       enabled: true
@@ -376,12 +366,18 @@ web:
           --options-path ./.sequelize-game_changer \
           --env game_changer \
           --url "postgresql://${POSTGRES_USER_GAME_CHANGER}:${_urlenc_pass}@${POSTGRES_HOST_GAME_CHANGER}/game_changer"
-
         _urlenc_pass=$(2>/dev/null node -e "console.log(encodeURIComponent(process.env.POSTGRES_PASSWORD_GC_ORCHESTRATION))")
         sequelize db:migrate \
           --options-path ./.sequelize-gc-orchestration \
           --env gc_orchestration \
           --url "postgresql://${POSTGRES_USER_GC_ORCHESTRATION}:${_urlenc_pass}@${POSTGRES_HOST_GC_ORCHESTRATION}/gc-orchestration"
+  # containerSecurityContext - <Map>
+  #   Security context for app and job containers.
+  #   It's useful to define this to match user-id and group-id of the application and its' files inside container
+  #   For more on what goes in here, reference https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container
+  containerSecurityContext:
+    runAsUser: 1001
+    runAsGroup: 1001
   qlik:
     sysAccount: ""
     adDomain: ""
@@ -703,7 +699,8 @@ neo4j:
   resources:
     cpu: "1000m"
     memory: "2Gi"
-
+  # initContainers for the Neo4j pod
+  initContainers: []
   # Neo4j Configuration (yaml format)
   config:
     dbms.config.strict_validation: "true"
@@ -931,15 +928,11 @@ postgresql:
     enabled: true
   persistence:
     enabled: true
-  ## @param postgresql.initdbScripts [object] Initdb scripts to create databases
+  ## @param postgresql.primary.initdb.scripts [object] Initdb scripts to create databases
   ##
   primary:
     initdb:
-      scripts:
-        gamechanger.sql: |
-          CREATE DATABASE game_changer;
-          CREATE DATABASE gc-orchestration;
-          CREATE DATABASE uot;
+      scriptsConfigMap: "gc-psql-init-scripts"
 
 redis:
   # @param redis.asSubchart If external redis is used, set it to `false`

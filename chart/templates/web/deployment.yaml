@@ -19,7 +19,6 @@ spec:
   template:
     metadata:
       annotations:
-        deploy-ts: {{ now | quote }}
         {{- if not .Values.web.existingSecret }}
         checksum/secret: {{ include (print $.Template.BasePath "/web/secret.yaml") . | sha256sum }}
         {{- end}}
@@ -60,7 +59,7 @@ spec:
           args: 
             - |
               {{- .Values.web.init.container.script | trim | nindent 16 }}
-          {{- with .Values.web.appContainerSecurityContext }}
+          {{- with .Values.web.containerSecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -145,7 +144,7 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           volumeMounts:
-            {{- if ((include "app.web.createTlsSecret" .)) }}
+            {{- if .Values.web.tls.enabled }}
             - name: tls-secret-files
               mountPath: {{ .Values.web.tls.mountPath }}
               readOnly: true

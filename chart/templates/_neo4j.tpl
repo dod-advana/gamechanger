@@ -28,6 +28,13 @@ Create the name of the service account to use for web
 {{- end }}
 
 {{/*
+Convert a neo4j.conf properties text into valid yaml
+*/}}
+{{- define "app.neo4j.configYaml" -}}
+  {{- regexReplaceAll "(?m)^([^=]*?)=" ( regexReplaceAllLiteral "\\s*(#|dbms\\.jvm\\.additional).*" . "" )  "${1}: " | trim | replace ": true\n" ": 'true'\n" | replace ": true" ": 'true'\n" | replace ": false\n" ": 'false'\n" | replace ": false" ": 'false'\n"  | replace ": yes\n" ": 'yes'\n" | replace ": yes" ": 'yes'\n" | replace ": no" ": 'no'\n" | replace ": no\n" ": 'no'\n" }}
+{{- end -}}
+
+{{/*
 Get the web configuration ConfigMap name.
 */}}
 {{- define "app.neo4j.configMapName" -}}
@@ -209,50 +216,19 @@ If selector is chosen process the selector template and then overwrite "dynamic"
 {{- end -}}
 {{- end -}}
 
-{{- define "app.neo4j.initChmodContainer" }}
-{{- $initChmodScript := include "app.neo4j.initChmodScript" . }}
-{{- if $initChmodScript }}
-name: "set-volume-permissions"
-image: {{ template "app.neo4j.image" . }}
-env:
-  - name: POD_NAME
-    valueFrom:
-      fieldRef:
-        fieldPath: metadata.name
-securityContext:
-  runAsNonRoot: false
-  runAsUser: 0
-  runAsGroup: 0
-volumeMounts: {{- include "app.neo4j.volumeMounts" .Values.neo4j.volumes | nindent 2 }}
-command:
-  - "bash"
-  - "-c"
-  - |
-    set -o pipefail -o errtrace -o errexit -o nounset
-    shopt -s inherit_errexit
-    [[ -n "${TRACE:-}" ]] && set -o xtrace
-    {{- $initChmodScript | nindent 4 }}
-{{- end }}
-{{- end }}
-
 {{- define "app.neo4j.initChmodScript" -}}
 {{- $securityContext := .Values.neo4j.securityContext -}}
 {{- range $name, $spec := .Values.neo4j.volumes -}}
-{{- if (index $spec $spec.mode).setOwnerAndGroupWritableFilePermissions -}}
-{{- if $securityContext -}}{{- if $securityContext.runAsUser }}
-
+{{- if $securityContext.runAsUser }}
 # change owner
 chown -R "{{ $securityContext.runAsUser }}" "/{{ $name }}"
-{{- end -}}{{- end -}}
-{{- if $securityContext -}}{{- if $securityContext.runAsGroup }}
-
+{{- end }}
+{{- if $securityContext.runAsGroup }}
 # change group
 chgrp -R "{{ $securityContext.runAsGroup }}" "/{{ $name }}"
-{{- end -}}{{- end }}
-
+{{- end }}
 # make group writable
 chmod -R g+rwx "/{{ $name }}"
-{{- end -}}
 {{- end -}}
 {{- end -}}
 

@@ -58,7 +58,7 @@ spec:
     {{- if and .Values.ingress.web.tls (or (include "common.ingress.certManagerRequest" ( dict "annotations" .Values.ingress.web.annotations )) .Values.ingress.web.selfSigned) }}
     - hosts:
         - {{ $fqdn | quote }}
-      secretName: {{ printf "%s-tls" $fqdn }}
+      secretName: {{ printf "%s-ing-tls" $fqdn }}
     {{- end }}
     {{- if .Values.ingress.web.extraTls }}
     {{- include "common.tplvalues.render" (dict "value" .Values.ingress.web.extraTls "context" $) | nindent 4 }}

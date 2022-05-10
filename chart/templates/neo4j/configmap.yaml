@@ -22,7 +22,7 @@ data:
   dbms.connector.bolt.connection_keep_alive: "30s"
   dbms.connector.bolt.connection_keep_alive_for_requests: "ALL"
   dbms.connector.bolt.connection_keep_alive_streaming_scheduling_interval: "30s"
-{{ (.Files.Glob $confFileName).AsConfig | indent 2 }}
+{{- include "app.neo4j.configYaml" (.Files.Get $confFileName) | nindent 2 }}
 ---
 apiVersion: v1
 kind: ConfigMap

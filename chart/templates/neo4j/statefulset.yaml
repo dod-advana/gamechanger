@@ -1,4 +1,5 @@
 {{- $offlineMaintenanceEnabled :=  .Values.neo4j.offlineMaintenanceModeEnabled }}
+{{- $initChmodScript := include "app.neo4j.initChmodScript" . }}
 apiVersion: {{ include "common.capabilities.statefulset.apiVersion" . }}
 kind: StatefulSet
 metadata:
@@ -54,23 +55,27 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       terminationGracePeriodSeconds: {{ if $offlineMaintenanceEnabled  }}0{{ else }}{{ .Values.neo4j.terminationGracePeriodSeconds }}{{ end }}
-      {{- $initContainers := .Values.neo4j.initContainers }}
-      {{- $initChmodContainer := include "app.neo4j.initChmodContainer" . }}
-      {{- if $initChmodContainer }}{{ $initContainers = fromYaml $initChmodContainer | prepend $initContainers }}{{ end }}
-      {{- with $initContainers }}
       initContainers:
-        {{- range $i, $initContainer := . }}
-        {{- if not $offlineMaintenanceEnabled | or $initContainer.enabledInOfflineMaintenanceMode }}
-        - {{ omit $initContainer "enabledInOfflineMaintenanceMode" | toYaml | indent 10 | trimAll " " }}
-          {{- if not ( hasKey $initContainer "image") }}
+        - name: "set-volume-permissions"
           image: {{ template "app.neo4j.image" . }}
-          {{- end }}
-          {{- if not ( hasKey $initContainer "volumeMounts") }}
-          volumeMounts: {{ include "app.neo4j.volumeMounts" ( omit $.Values.neo4j.volumes "logs" "metrics" ) | nindent 12 }}
-          {{- end }}
-        {{- end }}
-        {{- end }}
-      {{- end }}
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          securityContext:
+            runAsNonRoot: false
+            runAsUser: 0
+            runAsGroup: 0
+          volumeMounts: {{- include "app.neo4j.volumeMounts" .Values.neo4j.volumes | nindent 12 }}
+          command:
+            - "bash"
+            - "-c"
+            - |
+              set -o pipefail -o errtrace -o errexit -o nounset
+              shopt -s inherit_errexit
+              [[ -n "${TRACE:-}" ]] && set -o xtrace
+              {{- $initChmodScript | nindent 14 }}
       containers:
         - name: "neo4j"
           image: {{ template "app.neo4j.image" . }}
@@ -135,27 +140,27 @@ spec:
             - name: "neo4j-conf"
               mountPath: "/config/neo4j.conf"
             {{- if .Values.neo4j.tls.enabled }}
-            - name: "tls-secrets"
+            - name: tls-secret-files
               mountPath: "/var/lib/neo4j/certificates/bolt/public.crt"
               subPath: "{{ .Values.neo4j.tls.certFilename | default "tls.crt" }}"
               readOnly: true
-            - name: "tls-secrets"
+            - name: tls-secret-files
               mountPath: "/var/lib/neo4j/certificates/bolt/private.key"
               subPath: "{{ .Values.neo4j.tls.certKeyFilename | default "tls.key" }}"
               readOnly: true
-            - name: "tls-secrets"
+            - name: tls-secret-files
               mountPath: "/var/lib/neo4j/certificates/bolt/trusted"
               subPath: "{{ .Values.neo4j.tls.certCAFilename | default "ca.crt" }}"
               readOnly: true
-            - name: "tls-secrets"
+            - name: tls-secret-files
               mountPath: "/var/lib/neo4j/certificates/https/public.crt"
               subPath: "{{ .Values.neo4j.tls.certFilename | default "tls.crt" }}"
               readOnly: true
-            - name: "tls-secrets"
+            - name: tls-secret-files
               mountPath: "/var/lib/neo4j/certificates/https/private.key"
               subPath: "{{ .Values.neo4j.tls.certKeyFilename | default "tls.key" }}"
               readOnly: true
-            - name: "tls-secrets"
+            - name: tls-secret-files
               mountPath: "/var/lib/neo4j/certificates/https/trusted"
               subPath: "{{ .Values.neo4j.tls.certCAFilename | default "ca.crt" }}"
               readOnly: true
@@ -193,7 +198,7 @@ spec:
         {{- end }}
         - name: neo4j-conf
           projected:
-            defaultMode: 0440
+            defaultMode: 0444
             sources:
               - configMap:
                   name: {{ include "app.neo4j.configMapName" . | printf "%s-defaults" | quote }}

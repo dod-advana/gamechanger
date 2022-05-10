@@ -72,7 +72,7 @@ spec:
           args: 
             - |
               {{- .Values.ml.init.container.script | trim | nindent 16 }}
-          {{- with .Values.ml.appContainerSecurityContext }}
+          {{- with .Values.ml.containerSecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -113,7 +113,7 @@ spec:
             {{- printf "- %s" (. | quote) | nindent 12 }}
             {{- end -}}
           {{- end }}
-          {{- with .Values.ml.appContainerSecurityContext }}
+          {{- with .Values.ml.containerSecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}

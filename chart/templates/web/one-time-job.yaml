@@ -38,14 +38,14 @@ spec:
             secretName: {{ include "app.web.tlsSecretName" .  | quote }}
         {{- end }}
       containers:
-        - name: init-scripts
+        - name: one-time-job
           image: {{ template "app.web.init.job.image" . }}
           imagePullPolicy: {{ .Values.web.image.pullPolicy }}
           command: ["/bin/bash", "-c"]
           args:
             - |
               {{- .Values.web.init.job.script | trim | nindent 16 }}
-          {{- with .Values.appContainerSecurityContext }}
+          {{- with .Values.containerSecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
