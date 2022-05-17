@@ -12,4 +12,4 @@ metadata:
   {{- end }}
   namespace: {{ .Release.Namespace }}
 data:
-{{ (.Files.Glob "config/*.sql").AsConfig | indent 2 }}
+{{ (tpl (.Files.Glob "config/*.sql").AsConfig . ) | indent 2 }}

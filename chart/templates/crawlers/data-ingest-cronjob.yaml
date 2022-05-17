@@ -25,13 +25,13 @@ spec:
             - name: append-certs
               image: {{ template "app.crawlers.init.image" $ }}
               command:
-                - /bin/sh
-                - -c
-                - cat 
-                - /etc/certificates/cacert.pem
-                - /usr/local/aws-cli/v2/current/dist/awscli/botocore/cacert.pem
+                - "/bin/sh"
+                - "-c"
+                - "cat" 
+                - "/etc/certificates/cacert.pem"
+                - "/usr/local/aws-cli/v2/current/dist/awscli/botocore/cacert.pem"
                 - ">"
-                - /tmp/certificates/cacert.pem
+                - "/tmp/certificates/cacert.pem"
               volumeMounts:
                 - name: tmp
                   mountPath: /tmp/certificates
@@ -39,7 +39,8 @@ spec:
                   mountPath: /etc/certificates
             - name: {{ .name }}-crawl-download
               image: {{ template "app.crawlers.image" (dict "current" . "default" $defaultImage) }}
-              command: "crawl"
+              command: 
+                - "crawl"
               env: 
                 - name: "GC_CRAWL_SPIDERS_FILE_LOCATION"
                   value: "/etc/crawler_schedule/{{ .name }}.txt"
