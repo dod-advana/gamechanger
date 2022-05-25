@@ -1247,6 +1247,170 @@ airflow:
   asSubchart: true
   # Default airflow repository -- overrides all the specific images below
   defaultAirflowRepository: apache/airflow
+  airflowVersion: "2.3.0"
+
+  executor: "KubernetesExecutor"
+
+  allowPodLaunching: true
+
+  # Secrets for all airflow containers
+  secret:
+    - envName: "AIRFLOW_CONN_MINIO"
+      secretName: "airflow-connections"
+      secretKey: "AIRFLOW_CONN_MINIO"
+  # Environment variables for all airflow containers
+  env:
+    - name: "AIRFLOW_VAR_SCAN_CONCURRENCY"
+      value: "6"
+  # Extra secrets that will be managed by the chart
+  extraSecrets:
+    # base64 encoded connection str
+    airflow-connections:
+      data: |
+        "AIRFLOW_CONN_FOO": ""
+  # # Extra ConfigMaps that will be managed by the chart
+  extraConfigMaps:
+    # ID should be remaining characters after AIRFLOW_CONN_ in the airflow-connections secret
+    aws-conn-configmap:
+      data: |
+        AWS_S3_CONN_ID: ""
+    # cert if necessary, may need to enter as unbroken string and type "/n" linebreaks yourself due to how rancher parses
+    certs-configmap:
+      data: >-
+        zscaler_cert.pem:
+    # env vars to be mounted to the crawler task pod/container for configuration
+    crawler-configmap:
+      data: |
+        GC_CRAWL_CRAWLER_OUTPUT_LOCATION : /app/tmp/output/crawler-output.json
+        GC_CRAWL_DOWNLOAD_OUTPUT_DIR : /app/tmp/downloads
+        GC_CRAWL_PREVIOUS_MANIFEST_LOCATION : /app/tmp/downloads/previous-manifest.json
+        GC_CRAWL_SKIP_CONFIRMATION : "y"
+        GC_CRAWL_SPIDERS_FILE_LOCATION : /app/tmp/crawler-schedules/monday.txt
+    #   S3FULLPATH_MANIFEST : "s3://gamechanger/bronze/gamechanger/data-pipelines/orchestration/crawlers/cumulative-manifest.json"
+    # define the spiders to run for each day of week
+    crawler-schedules-configmap:
+      data: |
+        monday.txt : tradoc_spider
+    # env vars to be mounted to the download manifest task pod/container for configuration
+    download-manifest-configmap:
+      data: |
+        BUCKET: 
+        CACERT_PATH: /app/tmp/ca-cert/zscaler_cert.pem
+        DESTINATION: /app/tmp/downloads/previous-manifest.json
+        KEY:
+    # env vars to be mounted to the concurrent scanner task pod/container for configuration
+    parallel-scanner-configmap:
+      data: |
+        BUCKET: gamechanger
+        DELETE_AFTER_UPLOAD: "no"
+        S3_UPLOAD_BASE_PATH: 
+        SKIP_S3_UPLOAD: "no"
+    # env vars to be mounted to the upload manifest task pod/container for configuration
+    upload-manifest-configmap:
+      data: |
+        BUCKET: gamechanger
+        CACERT_PATH: 
+        FILENAME: /app/tmp/downloads/cumulative-manifest.json
+        KEY:
+  # web auth configuration
+  webserver:
+    # https://airflow.apache.org/docs/apache-airflow/stable/security/webserver.html#example-using-team-based-authorization-with-github-oauth
+    webserverConfig: |
+      import os
+
+      from airflow import configuration as conf
+      from flask_appbuilder.security.manager import AUTH_OAUTH
+      from airflow.www.security import AirflowSecurityManager
+      import logging
+      from typing import Dict, Any, List, Union
+      import os
+
+      basedir = os.path.abspath(os.path.dirname(__file__))
+
+      # The SQLAlchemy connection string.
+      SQLALCHEMY_DATABASE_URI = conf.get("core", "SQL_ALCHEMY_CONN")
+
+      # Flask-WTF flag for CSRF
+      CSRF_ENABLED = True
+
+      AUTH_TYPE = AUTH_OAUTH
+
+      # Check roles on every login
+      AUTH_ROLES_SYNC_AT_LOGIN = True
+
+      # Will allow user self registration
+      AUTH_USER_REGISTRATION = True
+
+      # Uncomment to setup Full admin role name
+      AUTH_ROLE_ADMIN = "Admin"
+
+      AUTH_USER_REGISTRATION_ROLE = "Admin"  # this role will be given in addition to any AUTH_ROLES_MAPPING
+
+      AUTH_ROLES_MAPPING= {
+      "User": ["User"],
+      "Admin": ["Admin"]
+      }
+
+      OAUTH_PROVIDERS = [{
+        'name':'github',
+        'token_key':'access_token',
+        'icon':'fa-github',
+          'remote_app': {
+            'api_base_url':'https://github.boozallencsn.com/api/v3/users',
+            'client_kwargs' : { 'scope' : 'user, read:user, read:org'},
+            'access_token_url': "https://github.boozallencsn.com/login/oauth/access_token",
+            'authorize_url': "https://github.boozallencsn.com/login/oauth/authorize",
+            'request_token_url': None,
+            'client_id': os.environ["GHClientID"], 
+            'client_secret': os.environ["GHClientSecret"]
+          }
+      }]
+
+      FAB_ADMIN_ROLE = "Admin"
+      FAB_VIEWER_ROLE = "Viewer"
+      FAB_USER_ROLE = "User"
+      FAB_PUBLIC_ROLE = "Public"  # The "Public" role is given no permissions
+      TEAM_ID_B_FROM_GITHUB = 5999  # Replace these with real team IDs for your org
+
+      def team_parser(team_payload: Dict[str, Any]) -> List[int]:
+          # Parse the team payload from Github however you want here.
+          return [team["id"] for team in team_payload]
+
+
+      def map_roles(team_list: List[int]) -> List[str]:
+          # Associate the team IDs with Roles here.
+          # The expected output is a list of roles that FAB will use to Authorize the user.
+
+          team_role_map = {
+              TEAM_ID_B_FROM_GITHUB: FAB_ADMIN_ROLE,
+          }
+          return list(set(team_role_map.get(team, FAB_USER_ROLE) for team in team_list))
+
+
+      class GithubTeamAuthorizer(AirflowSecurityManager):
+
+          # In this example, the oauth provider == 'github'.
+          # If you ever want to support other providers, see how it is done here:
+          # https://github.com/dpgaspar/Flask-AppBuilder/blob/master/flask_appbuilder/security/manager.py#L550
+          def get_oauth_user_info(
+              self, provider: str, resp: Any
+          ) -> Dict[str, Union[str, List[str]]]:
+
+              # Creates the user info payload from Github.
+              # The user previously allowed your app to act on thier behalf,
+              #   so now we can query the user and teams endpoints for their data.
+              # Username and team membership are added to the payload and returned to FAB.
+
+              remote_app = self.appbuilder.sm.oauth_remotes[provider]
+              me = remote_app.get("user")
+              user_data = me.json()
+              team_data = remote_app.get("user/teams")
+              teams = team_parser(team_data.json())
+              roles = map_roles(teams)
+              log.debug(
+                  f"User info from Github: {user_data}\n" f"Team info from Github: {teams}"
+              )
+              return {"username": "github_" + user_data.get("login"), "role_keys": roles}
 
   images:
     airflow:
