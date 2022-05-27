@@ -1255,25 +1255,32 @@ airflow:
 
   # Secrets for all airflow containers
   secret:
-    - envName: "AIRFLOW_CONN_MINIO"
+    - envName: "AIRFLOW_CONN_S3_CONN"
       secretName: "airflow-connections"
-      secretKey: "AIRFLOW_CONN_MINIO"
-  # Environment variables for all airflow containers
-  env:
-    - name: "AIRFLOW_VAR_SCAN_CONCURRENCY"
-      value: "6"
-  # Extra secrets that will be managed by the chart
+      secretKey: "AIRFLOW_CONN_S3_CONN"
   extraSecrets:
     # base64 encoded connection str
     airflow-connections:
       data: |
-        "AIRFLOW_CONN_FOO": ""
+        "AIRFLOW_CONN_S3_CONN": ""
+  # Environment variables for all airflow containers
+  env:
+    - name: "AIRFLOW_VAR_SCAN_CONCURRENCY"
+      value: "6"
+    - name: "AIRFLOW_VAR_CRAWLER_IMAGE"
+      value: "registry.lab.boozallencsn.com/library/advana/gc-crawlers@sha256:f5fe27584a5135a733aba23dad6abe9e41f108ae09d7775cb24e0005b8b6158c"
+    - name: "AIRFLOW_VAR_SCANNER_IMAGE"
+      value: "registry.lab.boozallencsn.com/library/advana/gc-downloader-dev@sha256:072a82c449e494cde95eef39923702fa194bfd850d29e4124323a2eb22586ac5"
+    - name: "AIRFLOW_VAR_BUSYBOX_IMAGE"
+      value: "registry.lab.boozallencsn.com/docker-mirror/library/busybox@sha256:f022a85dd58986144392ffb0920c2ed416b1583d09abf73e7c0c1a2651adde86"
+  # Extra secrets that will be managed by the chart
+
   # # Extra ConfigMaps that will be managed by the chart
   extraConfigMaps:
     # ID should be remaining characters after AIRFLOW_CONN_ in the airflow-connections secret
     aws-conn-configmap:
       data: |
-        AWS_S3_CONN_ID: ""
+        AWS_S3_CONN_ID: "S3_CONN"
     # cert if necessary, may need to enter as unbroken string and type "/n" linebreaks yourself due to how rancher parses
     certs-configmap:
       data: >-
@@ -1285,12 +1292,17 @@ airflow:
         GC_CRAWL_DOWNLOAD_OUTPUT_DIR : /app/tmp/downloads
         GC_CRAWL_PREVIOUS_MANIFEST_LOCATION : /app/tmp/downloads/previous-manifest.json
         GC_CRAWL_SKIP_CONFIRMATION : "y"
-        GC_CRAWL_SPIDERS_FILE_LOCATION : /app/tmp/crawler-schedules/monday.txt
     #   S3FULLPATH_MANIFEST : "s3://gamechanger/bronze/gamechanger/data-pipelines/orchestration/crawlers/cumulative-manifest.json"
     # define the spiders to run for each day of week
     crawler-schedules-configmap:
-      data: |
-        monday.txt : tradoc_spider
+    data: |
+      monday.txt : tradoc_spider
+      tuesday.txt : tradoc_spider
+      wednesday.txt : tradoc_spider
+      thursday.txt : tradoc_spider
+      friday.txt : tradoc_spider
+      saturdya.txt : tradoc_spider
+      sunday.txt : tradoc_spider
     # env vars to be mounted to the download manifest task pod/container for configuration
     download-manifest-configmap:
       data: |
