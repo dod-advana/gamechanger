@@ -1279,7 +1279,7 @@ airflow:
   extraConfigMaps:
     # ID should be remaining characters after AIRFLOW_CONN_ in the airflow-connections secret
     aws-conn-configmap:
-      data: |
+      data: |-
         AWS_S3_CONN_ID: "S3_CONN"
     # cert if necessary, may need to enter as unbroken string and type "/n" linebreaks yourself due to how rancher parses
     certs-configmap:
@@ -1295,14 +1295,14 @@ airflow:
     #   S3FULLPATH_MANIFEST : "s3://gamechanger/bronze/gamechanger/data-pipelines/orchestration/crawlers/cumulative-manifest.json"
     # define the spiders to run for each day of week
     crawler-schedules-configmap:
-    data: |
-      monday.txt : tradoc_spider
-      tuesday.txt : tradoc_spider
-      wednesday.txt : tradoc_spider
-      thursday.txt : tradoc_spider
-      friday.txt : tradoc_spider
-      saturdya.txt : tradoc_spider
-      sunday.txt : tradoc_spider
+      data: |
+        monday.txt : tradoc_spider
+        tuesday.txt : tradoc_spider
+        wednesday.txt : tradoc_spider
+        thursday.txt : tradoc_spider
+        friday.txt : tradoc_spider
+        saturdya.txt : tradoc_spider
+        sunday.txt : tradoc_spider
     # env vars to be mounted to the download manifest task pod/container for configuration
     download-manifest-configmap:
       data: |
