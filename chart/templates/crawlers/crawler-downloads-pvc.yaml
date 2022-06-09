@@ -1,0 +1,6 @@
+{{- range .Values.crawlers.persistentVolumeClaims }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+{{- . | toYaml | trim | nindent 2 }}
+{{- end }}

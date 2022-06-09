@@ -549,128 +549,80 @@ crawlers:
   #   - when troubleshooting, set to 1 to avoid dealing with complications of load-balanced traffic
   replicaCount: 1
 
+  persistentVolumeClaims:
+    - metadata:
+        name: gc-crawler-downloads
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 30Gi
+
+  # Airflow crawler configs
+  images:
+    crawler:
+      registry:
+      repository:
+      tag:
+    scanner:
+      registry:
+      repository:
+      tag:
+    busybox:
+      registry:
+      repository:
+      tag:
+
+  configVars:
+    scanConcurrency:
+    awsConnID:
+    localCrawlerOutputLocation:
+    localCrawlerDownloadDirectory:
+    localPreviousManifestLocation:
+    # remove? default must be 'y' if running via airflow, since there will be no user input
+    crawlerSkipConfirmation:
+
+    downloadManifestBucket:
+    downloadManifestKey:
+    downloadManifestCacertPath:
+
+    # remove? should be same as localPreviousManifestLocation
+    downloadManifestLocalDestination:
+
+    scanUploadBucket:
+    scanDeleteAfterUpload:
+    scanS3Dir:
+    scanSkipS3Upload:
+
+    uploadManifestBucket:
+    uploadManifestKey:
+    uploadManifestCacertPath:
+    uploadManifestFilepath:
+
+  configFiles:
+    cacert.pem: |-
+
+    monday.txt: |-
+      us_code_spider
+      tradoc_spider
+
+    tuesday.txt: |-
+
+    wednesday.txt: |-
+
+    thursday.txt: |-
+
+    friday.txt: |-
+
+    saturday.txt: |-
+
+    sunday.txt: |-
+
   updateStrategy:
     type: RollingUpdate
   ## @param crawlers.existingSecret Permits specifying a secret name for crawler configuration. Should include {}
   existingSecret: ""
-  slackWebhook:
-    enabled: false
-    ## NOTE: Slack webhook URLs should be considered sensitive as any POST requests will be forawrded without auth
-    url: ""
-    channel: ""
-
-  defaultJobConfigs:
-    restartPolicy: "Never" # options: OnFailure, Never
-    image:
-      registry: ""
-      repository: "advana/gamechanger/gamechanger-crawler"
-      pullPolicy: Always
-      tag: "latest"
-    initImage:
-      registry: ""
-      repository: "amazon/aws-cli"
-      pullPolicy: Always
-      tag: "latest"
-    # LOCAL_PREVIOUS_MANIFEST_LOCATION - directory where previous-manifest.json lives to filter out previously downloaded files from being downloaded again
-    # to pull this file, might need to create more jobs for loading and updating
-    LOCAL_PREVIOUS_MANIFEST_LOCATION:
-    # LOCAL_DOWNLOAD_DIRECTORY_PATH: path for files to be downloaded to and scanned,
-    # can also specify a different location for each schedule so that other schedules' files arent scanned repeatedly if not deleted
-    LOCAL_DOWNLOAD_DIRECTORY_PATH: "/app/tmp/downloads"
-    # full path for crawler json output, eg: /app/tmp/output/crawler-output.json
-    CRAWLER_OUTPUT_LOCATION: "/app/tmp/output/crawler-output.json"
-    SKIP_S3_UPLOAD: "yes"
-    DELETE_AFTER_UPLOAD: "no"
-    # S3_UPLOAD_BASE_PATH: S3 base path for final uploads sans bucket name
-    S3_UPLOAD_BASE_PATH: "s3://somebucket/someplace"
-    # BUCKET: bucket that exists in the S3_UPLOAD_BASE_PATH location
-    BUCKET: "yourbucket"
-
-    # Define the volume and mountpath that will be mounted to the crawler-downloader cronjob, the PV/PVC should already exist
-    # Set the mountPath and LOCAL_DOWNLOAD_DIRECTORY_PATH as the same path to persist the downloaded files from the job
-    downloadDirectoryVolumeConfig:
-      name: "crawler-downloads-volume"
-      claimName: "crawler-downloads-claim"
-      mountPath: "/app/tmp/downloads"
-    #  # SEND_NOTIFICATIONS - if "yes", then should send notification to slack channel. part of job_runner.sh wrapper and not implemented yet for cronjobs.
-    # SEND_NOTIFICATIONS: "no"
-    # # SLACK_HOOK_CHANNEL - name of slack channel to send notifications to. make sure to set env var SLACK_HOOK_URL in a secret ("SLACK_SECRETS"?)
-    # SLACK_HOOK_CHANNEL: "#gc-alerts-dev"
-    # # UPLOAD_LOGS - if "yes", then uploads local logs to s3 log bucket
-    # UPLOAD_LOGS: "no"
-    # S3_UPLOAD_BASE_PATH - s3 base url (upload path without bucket) for uploading scanned files
-
-  cacerts:
-    - "test123"
-
-  cronJobs:
-    - name: "crawler-sunday"
-      schedule: "1 1 * * 0"
-      crawlerIDs:
-        - sorn_spider
-        - secnav_spider
-        - coast_guard_spider
-        - omb_pubs_spider
-        - dcma_spider
-    - name: "crawler-monday"
-      schedule: "1 1 * * 1"
-      crawlerIDs:
-        - legislation_spider
-        - chief_national_guard_bureau_spider
-        - ic_policies_spider
-        - stig_spider
-        - tradoc_spider
-    - name: "crawler-tuesday"
-      schedule: "1 1 * * 2"
-      crawlerIDs:
-        - army_pubs_spider
-        - cfr_spider
-        - us_code_spider
-        - dha_spider
-        - cnss_spider
-    - name: "crawler-wednesday"
-      schedule: "1 1 * * 3"
-      crawlerIDs:
-        - executive_orders_spider
-        - fasab_spider
-        - dod_coronavirus_spider
-        - navy_med_spider
-    - name: "crawler-thursday"
-      schedule: "1 1 * * 4"
-      crawlerIDs:
-        - marine_corp_spider
-        - milpersman_spider
-        - bupers_spider
-        - dfars_pgi_spider
-    - name: "crawler-friday"
-      schedule: "1 1 * * 5"
-      crawlerIDs:
-        - air_force_spider
-        - nato_spider
-        - navy_reserve_spider
-        - jcs_pubs_spider
-        - army_reserve_spider
-    # saturday
-    - name: "crawler-saturday"
-      schedule: "1 1 * * 6"
-      crawlerIDs:
-        - dod_issuances_spider
-        - dfar_subpart_regs_spider
-        - fmr_spider
-        - far_subpart_regs_spider
-
-    # # # schedule sets the same frequency for all crons
-    # schedule: "30 2 * * *"
-    #   crons: # []
-    #     - name: job1
-    #       image:
-    #         registry: ""
-    #         repository: "advana/gamechanger/gamechanger-crawler-test"
-    #         tag: "latest"
-    #       imagePullPolicy: "Always"
-    #       # crawlerID has to be an existing .py script
-    #       crawlerID: "executive_orders_spider"
-    #       restartPolicy: "OnFailure"
 
 neo4j:
   asSubchart: true
@@ -1253,6 +1205,10 @@ airflow:
 
   allowPodLaunching: true
 
+  extraEnvFrom: |
+    - configMapRef:
+        name: "{{ .Release.Name }}-airflow-crawler-env"
+
   # Secrets for all airflow containers
   secret:
     - envName: "AIRFLOW_CONN_S3_CONN"
@@ -1263,166 +1219,21 @@ airflow:
     airflow-connections:
       data: |
         "AIRFLOW_CONN_S3_CONN": ""
-  # Environment variables for all airflow containers
-  env:
-    - name: "AIRFLOW_VAR_SCAN_CONCURRENCY"
-      value: "6"
-    - name: "AIRFLOW_VAR_CRAWLER_IMAGE"
-      value: "registry.lab.boozallencsn.com/library/advana/gc-crawlers@sha256:f5fe27584a5135a733aba23dad6abe9e41f108ae09d7775cb24e0005b8b6158c"
-    - name: "AIRFLOW_VAR_SCANNER_IMAGE"
-      value: "registry.lab.boozallencsn.com/library/advana/gc-downloader-dev@sha256:072a82c449e494cde95eef39923702fa194bfd850d29e4124323a2eb22586ac5"
-    - name: "AIRFLOW_VAR_BUSYBOX_IMAGE"
-      value: "registry.lab.boozallencsn.com/docker-mirror/library/busybox@sha256:f022a85dd58986144392ffb0920c2ed416b1583d09abf73e7c0c1a2651adde86"
-  # Extra secrets that will be managed by the chart
 
-  # # Extra ConfigMaps that will be managed by the chart
-  extraConfigMaps:
-    # ID should be remaining characters after AIRFLOW_CONN_ in the airflow-connections secret
-    aws-conn-configmap:
-      data: |-
-        AWS_S3_CONN_ID: "S3_CONN"
-    # cert if necessary, may need to enter as unbroken string and type "/n" linebreaks yourself due to how rancher parses
-    certs-configmap:
-      data: >-
-        zscaler_cert.pem:
-    # env vars to be mounted to the crawler task pod/container for configuration
-    crawler-configmap:
-      data: |
-        GC_CRAWL_CRAWLER_OUTPUT_LOCATION : /app/tmp/output/crawler-output.json
-        GC_CRAWL_DOWNLOAD_OUTPUT_DIR : /app/tmp/downloads
-        GC_CRAWL_PREVIOUS_MANIFEST_LOCATION : /app/tmp/downloads/previous-manifest.json
-        GC_CRAWL_SKIP_CONFIRMATION : "y"
-    #   S3FULLPATH_MANIFEST : "s3://gamechanger/bronze/gamechanger/data-pipelines/orchestration/crawlers/cumulative-manifest.json"
-    # define the spiders to run for each day of week
-    crawler-schedules-configmap:
-      data: |
-        monday.txt : tradoc_spider
-        tuesday.txt : tradoc_spider
-        wednesday.txt : tradoc_spider
-        thursday.txt : tradoc_spider
-        friday.txt : tradoc_spider
-        saturdya.txt : tradoc_spider
-        sunday.txt : tradoc_spider
-    # env vars to be mounted to the download manifest task pod/container for configuration
-    download-manifest-configmap:
-      data: |
-        BUCKET: 
-        CACERT_PATH: /app/tmp/ca-cert/zscaler_cert.pem
-        DESTINATION: /app/tmp/downloads/previous-manifest.json
-        KEY:
-    # env vars to be mounted to the concurrent scanner task pod/container for configuration
-    parallel-scanner-configmap:
-      data: |
-        BUCKET: gamechanger
-        DELETE_AFTER_UPLOAD: "no"
-        S3_UPLOAD_BASE_PATH: 
-        SKIP_S3_UPLOAD: "no"
-    # env vars to be mounted to the upload manifest task pod/container for configuration
-    upload-manifest-configmap:
-      data: |
-        BUCKET: gamechanger
-        CACERT_PATH: 
-        FILENAME: /app/tmp/downloads/cumulative-manifest.json
-        KEY:
   # web auth configuration
   webserver:
     # https://airflow.apache.org/docs/apache-airflow/stable/security/webserver.html#example-using-team-based-authorization-with-github-oauth
-    webserverConfig: |
-      import os
-
-      from airflow import configuration as conf
-      from flask_appbuilder.security.manager import AUTH_OAUTH
-      from airflow.www.security import AirflowSecurityManager
-      import logging
-      from typing import Dict, Any, List, Union
-      import os
-
-      basedir = os.path.abspath(os.path.dirname(__file__))
-
-      # The SQLAlchemy connection string.
-      SQLALCHEMY_DATABASE_URI = conf.get("core", "SQL_ALCHEMY_CONN")
-
-      # Flask-WTF flag for CSRF
-      CSRF_ENABLED = True
-
-      AUTH_TYPE = AUTH_OAUTH
-
-      # Check roles on every login
-      AUTH_ROLES_SYNC_AT_LOGIN = True
-
-      # Will allow user self registration
-      AUTH_USER_REGISTRATION = True
-
-      # Uncomment to setup Full admin role name
-      AUTH_ROLE_ADMIN = "Admin"
-
-      AUTH_USER_REGISTRATION_ROLE = "Admin"  # this role will be given in addition to any AUTH_ROLES_MAPPING
-
-      AUTH_ROLES_MAPPING= {
-      "User": ["User"],
-      "Admin": ["Admin"]
-      }
-
-      OAUTH_PROVIDERS = [{
-        'name':'github',
-        'token_key':'access_token',
-        'icon':'fa-github',
-          'remote_app': {
-            'api_base_url':'https://github.boozallencsn.com/api/v3/users',
-            'client_kwargs' : { 'scope' : 'user, read:user, read:org'},
-            'access_token_url': "https://github.boozallencsn.com/login/oauth/access_token",
-            'authorize_url': "https://github.boozallencsn.com/login/oauth/authorize",
-            'request_token_url': None,
-            'client_id': os.environ["GHClientID"], 
-            'client_secret': os.environ["GHClientSecret"]
-          }
-      }]
-
-      FAB_ADMIN_ROLE = "Admin"
-      FAB_VIEWER_ROLE = "Viewer"
-      FAB_USER_ROLE = "User"
-      FAB_PUBLIC_ROLE = "Public"  # The "Public" role is given no permissions
-      TEAM_ID_B_FROM_GITHUB = 5999  # Replace these with real team IDs for your org
-
-      def team_parser(team_payload: Dict[str, Any]) -> List[int]:
-          # Parse the team payload from Github however you want here.
-          return [team["id"] for team in team_payload]
-
-
-      def map_roles(team_list: List[int]) -> List[str]:
-          # Associate the team IDs with Roles here.
-          # The expected output is a list of roles that FAB will use to Authorize the user.
-
-          team_role_map = {
-              TEAM_ID_B_FROM_GITHUB: FAB_ADMIN_ROLE,
-          }
-          return list(set(team_role_map.get(team, FAB_USER_ROLE) for team in team_list))
-
-
-      class GithubTeamAuthorizer(AirflowSecurityManager):
-
-          # In this example, the oauth provider == 'github'.
-          # If you ever want to support other providers, see how it is done here:
-          # https://github.com/dpgaspar/Flask-AppBuilder/blob/master/flask_appbuilder/security/manager.py#L550
-          def get_oauth_user_info(
-              self, provider: str, resp: Any
-          ) -> Dict[str, Union[str, List[str]]]:
-
-              # Creates the user info payload from Github.
-              # The user previously allowed your app to act on thier behalf,
-              #   so now we can query the user and teams endpoints for their data.
-              # Username and team membership are added to the payload and returned to FAB.
-
-              remote_app = self.appbuilder.sm.oauth_remotes[provider]
-              me = remote_app.get("user")
-              user_data = me.json()
-              team_data = remote_app.get("user/teams")
-              teams = team_parser(team_data.json())
-              roles = map_roles(teams)
-              log.debug(
-                  f"User info from Github: {user_data}\n" f"Team info from Github: {teams}"
-              )
-              return {"username": "github_" + user_data.get("login"), "role_keys": roles}
+    extraVolumeMounts:
+      - name: webserver-vol
+        mountPath: /opt/airflow
+        readOnly: true
+    extraVolumes:
+      - name: webserver-vol
+        configMap:
+          name: "{{ .Release.Name }}-airflow-webserver-config"
+          items:
+            - key: webserver_config.py
+              path: webserver_config.py
 
   images:
     airflow:
@@ -1479,7 +1290,6 @@ airflow:
     metadataSecretName: "gc-{{ .Release.Name }}-airflow-metadata"
     resultBackendSecretName: "gc-{{ .Release.Name }}-airflow-result"
     brokerUrlSecretName: "gc-{{ .Release.Name }}-airflow-broker"
-
   logs:
     persistence:
       enabled: true

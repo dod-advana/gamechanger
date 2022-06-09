@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-airflow-crawler-env
+  labels:
+  {{- include "common.labels.standard" . | nindent 4 }}
+  {{- if .Values.commonLabels }}
+  {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+  {{- end }}
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+  namespace: {{ .Release.Namespace }}
+data:
+  SCAN_CONCURRENCY: {{ .Values.crawlers.configVars.scanConcurrency | default "1" }}
+  CRAWLER_IMAGE: {{- printf " %s/%s:%s" .Values.crawlers.images.crawler.registry  .Values.crawlers.images.crawler.repository .Values.crawlers.images.crawler.tag }}
+  CRAWLER_IMAGE_REGISTRY: {{ .Values.crawlers.images.crawler.registry }}
+  CRAWLER_IMAGE_TAG: {{ .Values.crawlers.images.crawler.tag }}
+  CRAWLER_IMAGE_REPO: {{ .Values.crawlers.images.crawler.repository }}
+  SCANNER_IMAGE: {{- printf " %s/%s:%s" .Values.crawlers.images.scanner.registry  .Values.crawlers.images.scanner.repository .Values.scanner.images.crawler.tag }}
+  SCANNER_IMAGE_REGISTRY: {{ .Values.crawlers.images.scanner.registry }}
+  SCANNER_IMAGE_TAG: {{ .Values.crawlers.images.scanner.tag }}
+  SCANNER_IMAGE_REPO: {{ .Values.crawlers.images.scanner.repository }}
+  BUSYBOX_IMAGE: {{- printf " %s/%s:%s" .Values.crawlers.images.scanner.registry  .Values.crawlers.images.scanner.repository .Values.scanner.images.crawler.tag }}
+  BUSYBOX_IMAGE_REGISTRY: {{ .Values.crawlers.images.busybox.registry }}
+  BUSYBOX_IMAGE_TAG: {{ .Values.crawlers.images.busybox.tag }}
+  BUSYBOX_IMAGE_REPO: {{ .Values.crawlers.images.busybox.repository }}
+  AWS_S3_CONN_ID: {{ .Values.crawlers.configVars.awsConnID }}
+  GC_CRAWL_CRAWLER_OUTPUT_LOCATION : {{ .Values.crawlers.configVars.localCrawlerOutputLocation }}
+  GC_CRAWL_DOWNLOAD_OUTPUT_DIR : {{ .Values.crawlers.configVars.localCrawlerDownloadDirectory }}
+  GC_CRAWL_PREVIOUS_MANIFEST_LOCATION : {{ .Values.crawlers.configVars.localPreviousManifestLocation }}
+  GC_CRAWL_SKIP_CONFIRMATION : {{ .Values.crawlers.configVars.crawlerSkipConfirmation | default "y" }}
+  # Download manifest from s3 task's env vars
+  DOWNLOAD_MANIFEST_BUCKET: {{ .Values.crawlers.configVars.downloadManifestBucket }}
+  DOWNLOAD_MANIFEST_KEY: {{ .Values.crawlers.configVars.downloadManifestKey }}
+  DOWNLOAD_MANIFEST_CACERT_PATH: {{ .Values.crawlers.configVars.downloadManifestCacertPath }}
+  DOWNLOAD_MANIFEST_DESTINATION: {{ .Values.crawlers.configVars.downloadManifestLocalDestination }}
+  # Scanner env
+  BUCKET: {{ .Values.crawlers.configVars.scanUploadBucket }}
+  DELETE_AFTER_UPLOAD:  {{ .Values.crawlers.configVars.scanDeleteAfterUpload | default "no" }}
+  S3_UPLOAD_BASE_PATH:  {{ .Values.crawlers.configVars.scanS3Dir }}
+  SKIP_S3_UPLOAD:  {{ .Values.crawlers.configVars.scanSkipS3Upload | default "no" }}
+  PARTITION_BUCKET: {{ .Values.crawlers.configVars.partitionBucket }}
+  PARTITION_DIRECTORY: {{ .Values.crawlers.configVars.partitionDirectory }}
+  # Upload manifest to s3 env vars
+  UPLOAD_MANIFEST_BUCKET: {{ .Values.crawlers.configVars.uploadManifestBucket }}
+  UPLOAD_MANIFEST_KEY: {{ .Values.crawlers.configVars.uploadManifestKey }}
+  UPLOAD_MANIFEST_CACERT_PATH: {{ .Values.crawlers.configVars.uploadManifestCacertPath }}
+  UPLOAD_MANIFEST_FILENAME: {{ .Values.crawlers.configVars.uploadManifestFilepath | default "/app/tmp/downloads/cumulative-manifest.json" }}
+  FILES_CONFIGMAP_NAME: {{ .Values.crawlers.configVars.filesConfigmap }}
+  CRAWLER_DOWNLOADS_PVC_NAME: {{ .Values.crawlers.configVars.crawlerDownloadsPVC }}
+  
+
+

@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-airflow-webserver-config
+  labels:
+  {{- include "common.labels.standard" . | nindent 4 }}
+  {{- if .Values.commonLabels }}
+  {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+  {{- end }}
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+  namespace: {{ .Release.Namespace }}
+data:
+  webserver-config.py: |
+    import os
+
+    from airflow import configuration as conf
+    from flask_appbuilder.security.manager import AUTH_OAUTH
+    from airflow.www.security import AirflowSecurityManager
+    import logging
+    from typing import Dict, Any, List, Union
+    import os
+
+    basedir = os.path.abspath(os.path.dirname(__file__))
+
+    # The SQLAlchemy connection string.
+    SQLALCHEMY_DATABASE_URI = conf.get("core", "SQL_ALCHEMY_CONN")
+
+    # Flask-WTF flag for CSRF
+    CSRF_ENABLED = True
+
+    AUTH_TYPE = AUTH_OAUTH
+
+    # Check roles on every login
+    AUTH_ROLES_SYNC_AT_LOGIN = True
+
+    # Will allow user self registration
+    AUTH_USER_REGISTRATION = True
+
+    # Uncomment to setup Full admin role name
+    AUTH_ROLE_ADMIN = "Admin"
+
+    AUTH_USER_REGISTRATION_ROLE = "Admin"  # this role will be given in addition to any AUTH_ROLES_MAPPING
+
+    AUTH_ROLES_MAPPING= {
+    "User": ["User"],
+    "Admin": ["Admin"]
+    }
+
+    OAUTH_PROVIDERS = [{
+      'name':'github',
+      'token_key':'access_token',
+      'icon':'fa-github',
+        'remote_app': {
+          'api_base_url':'https://github.boozallencsn.com/api/v3/users',
+          'client_kwargs' : { 'scope' : 'user, read:user, read:org'},
+          'access_token_url': "https://github.boozallencsn.com/login/oauth/access_token",
+          'authorize_url': "https://github.boozallencsn.com/login/oauth/authorize",
+          'request_token_url': None,
+          'client_id': os.environ["GHClientID"], 
+          'client_secret': os.environ["GHClientSecret"]
+        }
+    }]
+
+    FAB_ADMIN_ROLE = "Admin"
+    FAB_VIEWER_ROLE = "Viewer"
+    FAB_USER_ROLE = "User"
+    FAB_PUBLIC_ROLE = "Public"  # The "Public" role is given no permissions
+    TEAM_ID_B_FROM_GITHUB = 5999  # Replace these with real team IDs for your org
+
+    def team_parser(team_payload: Dict[str, Any]) -> List[int]:
+        # Parse the team payload from Github however you want here.
+        return [team["id"] for team in team_payload]
+
+
+    def map_roles(team_list: List[int]) -> List[str]:
+        # Associate the team IDs with Roles here.
+        # The expected output is a list of roles that FAB will use to Authorize the user.
+
+        team_role_map = {
+            TEAM_ID_B_FROM_GITHUB: FAB_ADMIN_ROLE,
+        }
+        return list(set(team_role_map.get(team, FAB_USER_ROLE) for team in team_list))
+
+
+    class GithubTeamAuthorizer(AirflowSecurityManager):
+
+        # In this example, the oauth provider == 'github'.
+        # If you ever want to support other providers, see how it is done here:
+        # https://github.com/dpgaspar/Flask-AppBuilder/blob/master/flask_appbuilder/security/manager.py#L550
+        def get_oauth_user_info(
+            self, provider: str, resp: Any
+        ) -> Dict[str, Union[str, List[str]]]:
+
+            # Creates the user info payload from Github.
+            # The user previously allowed your app to act on thier behalf,
+            #   so now we can query the user and teams endpoints for their data.
+            # Username and team membership are added to the payload and returned to FAB.
+
+            remote_app = self.appbuilder.sm.oauth_remotes[provider]
+            me = remote_app.get("user")
+            user_data = me.json()
+            team_data = remote_app.get("user/teams")
+            teams = team_parser(team_data.json())
+            roles = map_roles(teams)
+            log.debug(
+                f"User info from Github: {user_data}\n" f"Team info from Github: {teams}"
+            )
+            return {"username": "github_" + user_data.get("login"), "role_keys": roles}
