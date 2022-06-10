@@ -325,7 +325,7 @@ ml:
     # where tls files should be mounted (either auto generated or provided as files)
     mountPath: "/opt/app-root/src/secrets"
     # if no existing secret, these should be set and mounted
-    # Certificate file on ML container(s)
+    # Certificate file on ML container(s) 
     certFilename: "tls.crt"
     # Path to cert's key file on ML container(s)
     certKeyFilename: "tls.key"
@@ -562,17 +562,17 @@ crawlers:
   # Airflow crawler configs
   images:
     crawler:
-      registry:
-      repository:
-      tag:
-    scanner:
-      registry:
-      repository:
-      tag:
+      registry: ""
+      repository: "gc-crawler-downloader-test"
+      tag: "latest"
+    scanner: 
+      registry: ""
+      repository: "gc-crawler-downloader-test"
+      tag: "latest"
     busybox:
-      registry:
-      repository:
-      tag:
+      registry: ""
+      repository: "docker/busybox"
+      tag: "latest"
 
   configVars:
     scanConcurrency:
@@ -909,7 +909,9 @@ redis:
 
   hosts: []
   port: ""
-
+  
+  serviceAccount:
+    create: true
   ## @param redis.nameOverride String to partially override common.names.fullname template with a string (will prepend the release name)
   ##
   nameOverride: ""
@@ -1200,7 +1202,6 @@ airflow:
   # Default airflow repository -- overrides all the specific images below
   defaultAirflowRepository: apache/airflow
   airflowVersion: "2.3.0"
-
   executor: "KubernetesExecutor"
 
   allowPodLaunching: true

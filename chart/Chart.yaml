@@ -21,7 +21,7 @@ dependencies:
   - condition: redis.asSubchart
     name: redis
     repository: https://charts.bitnami.com/bitnami
-    version: 16.8.5
+    version: 16.x.x
   - condition: minio.asSubchart
     name: minio
     repository: https://charts.min.io/
