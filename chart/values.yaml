@@ -325,7 +325,7 @@ ml:
     # where tls files should be mounted (either auto generated or provided as files)
     mountPath: "/opt/app-root/src/secrets"
     # if no existing secret, these should be set and mounted
-    # Certificate file on ML container(s) 
+    # Certificate file on ML container(s)
     certFilename: "tls.crt"
     # Path to cert's key file on ML container(s)
     certKeyFilename: "tls.key"
@@ -548,16 +548,18 @@ crawlers:
   #   Tips:
   #   - when troubleshooting, set to 1 to avoid dealing with complications of load-balanced traffic
   replicaCount: 1
-
   persistentVolumeClaims:
-    - metadata:
-        name: gc-crawler-downloads
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: 30Gi
+    downloads:
+      # Enable persistent volume for storing crawler downloads
+      enabled: false
+      # Volume size for downloads
+      size: 1Gi
+      # If using a custom storageClass, pass name here
+      storageClassName:
+      # access mode of the persistent volume
+      accessMode: ReadWriteOnce
+      ## optional subpath for dag volume mount
+      subPath: ~
 
   # Airflow crawler configs
   images:
@@ -565,7 +567,7 @@ crawlers:
       registry: ""
       repository: "gc-crawler-downloader-test"
       tag: "latest"
-    scanner: 
+    scanner:
       registry: ""
       repository: "gc-crawler-downloader-test"
       tag: "latest"
@@ -575,37 +577,35 @@ crawlers:
       tag: "latest"
 
   configVars:
-    scanConcurrency:
-    awsConnID:
-    localCrawlerOutputLocation:
-    localCrawlerDownloadDirectory:
-    localPreviousManifestLocation:
+    scanConcurrency: ""
+    awsConnID: ""
+    localCrawlerOutputLocation: ""
+    localCrawlerDownloadDirectory: ""
+    localPreviousManifestLocation: ""
     # remove? default must be 'y' if running via airflow, since there will be no user input
-    crawlerSkipConfirmation:
+    crawlerSkipConfirmation: ""
 
-    downloadManifestBucket:
-    downloadManifestKey:
-    downloadManifestCacertPath:
+    downloadManifestBucket: ""
+    downloadManifestKey: ""
+    downloadManifestCacertPath: ""
 
     # remove? should be same as localPreviousManifestLocation
-    downloadManifestLocalDestination:
+    downloadManifestLocalDestination: ""
 
-    scanUploadBucket:
-    scanDeleteAfterUpload:
-    scanS3Dir:
-    scanSkipS3Upload:
+    scanUploadBucket: ""
+    scanDeleteAfterUpload: ""
+    scanS3Dir: ""
+    scanSkipS3Upload: ""
 
-    uploadManifestBucket:
-    uploadManifestKey:
-    uploadManifestCacertPath:
-    uploadManifestFilepath:
+    uploadManifestBucket: ""
+    uploadManifestKey: ""
+    uploadManifestCacertPath: ""
+    uploadManifestFilepath: ""
 
   configFiles:
     cacert.pem: |-
 
     monday.txt: |-
-      us_code_spider
-      tradoc_spider
 
     tuesday.txt: |-
 
@@ -619,8 +619,6 @@ crawlers:
 
     sunday.txt: |-
 
-  updateStrategy:
-    type: RollingUpdate
   ## @param crawlers.existingSecret Permits specifying a secret name for crawler configuration. Should include {}
   existingSecret: ""
 
@@ -909,7 +907,7 @@ redis:
 
   hosts: []
   port: ""
-  
+
   serviceAccount:
     create: true
   ## @param redis.nameOverride String to partially override common.names.fullname template with a string (will prepend the release name)
