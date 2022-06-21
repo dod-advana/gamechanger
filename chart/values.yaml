@@ -596,11 +596,15 @@ crawlers:
     scanDeleteAfterUpload: ""
     scanS3Dir: ""
     scanSkipS3Upload: ""
+    partitionBucket: ""
+    partitionDirectory: ""
 
     uploadManifestBucket: ""
     uploadManifestKey: ""
     uploadManifestCacertPath: ""
     uploadManifestFilepath: ""
+    crawlerDownloadsPVC: ""
+    filesConfigmap: ""
 
   configFiles:
     cacert.pem: |-

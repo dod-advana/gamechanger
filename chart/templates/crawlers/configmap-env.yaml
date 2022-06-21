@@ -12,7 +12,7 @@ metadata:
   {{- end }}
   namespace: {{ .Release.Namespace }}
 data:
-  SCAN_CONCURRENCY: {{ .Values.crawlers.configVars.scanConcurrency | default 1 | quote }}
+  SCAN_CONCURRENCY: {{ .Values.crawlers.configVars.scanConcurrency | default "1" | quote }}
   CRAWLER_IMAGE: {{ printf "%s/%s:%s" .Values.crawlers.images.crawler.registry  .Values.crawlers.images.crawler.repository .Values.crawlers.images.crawler.tag | quote }}
   SCANNER_IMAGE: {{ printf "%s/%s:%s" .Values.crawlers.images.scanner.registry  .Values.crawlers.images.scanner.repository .Values.crawlers.images.scanner.tag | quote }}
   BUSYBOX_IMAGE: {{ printf "%s/%s:%s" .Values.crawlers.images.scanner.registry  .Values.crawlers.images.scanner.repository .Values.crawlers.images.scanner.tag | quote }}
@@ -20,7 +20,7 @@ data:
   GC_CRAWL_CRAWLER_OUTPUT_LOCATION : {{ .Values.crawlers.configVars.localCrawlerOutputLocation | quote }}
   GC_CRAWL_DOWNLOAD_OUTPUT_DIR : {{ .Values.crawlers.configVars.localCrawlerDownloadDirectory | quote }}
   GC_CRAWL_PREVIOUS_MANIFEST_LOCATION : {{ .Values.crawlers.configVars.localPreviousManifestLocation | quote }}
-  GC_CRAWL_SKIP_CONFIRMATION : {{ .Values.crawlers.configVars.crawlerSkipConfirmation | default "y" }}
+  GC_CRAWL_SKIP_CONFIRMATION : {{ .Values.crawlers.configVars.crawlerSkipConfirmation | default "y" | quote  }}
   # Download manifest from s3 task's env vars
   DOWNLOAD_MANIFEST_BUCKET: {{ .Values.crawlers.configVars.downloadManifestBucket | quote }}
   DOWNLOAD_MANIFEST_KEY: {{ .Values.crawlers.configVars.downloadManifestKey | quote }}
@@ -28,16 +28,16 @@ data:
   DOWNLOAD_MANIFEST_DESTINATION: {{ .Values.crawlers.configVars.downloadManifestLocalDestination | quote }}
   # Scanner env
   BUCKET: {{ .Values.crawlers.configVars.scanUploadBucket | quote }}
-  DELETE_AFTER_UPLOAD:  {{ .Values.crawlers.configVars.scanDeleteAfterUpload | default "no" }}
+  DELETE_AFTER_UPLOAD:  {{ .Values.crawlers.configVars.scanDeleteAfterUpload | default "no" | quote  }}
   S3_UPLOAD_BASE_PATH:  {{ .Values.crawlers.configVars.scanS3Dir | quote }}
-  SKIP_S3_UPLOAD:  {{ .Values.crawlers.configVars.scanSkipS3Upload | default "no" }}
+  SKIP_S3_UPLOAD:  {{ .Values.crawlers.configVars.scanSkipS3Upload | default "no" | quote }}
   PARTITION_BUCKET: {{ .Values.crawlers.configVars.partitionBucket | quote }}
   PARTITION_DIRECTORY: {{ .Values.crawlers.configVars.partitionDirectory | quote }}
   # Upload manifest to s3 env vars
   UPLOAD_MANIFEST_BUCKET: {{ .Values.crawlers.configVars.uploadManifestBucket | quote }}
   UPLOAD_MANIFEST_KEY: {{ .Values.crawlers.configVars.uploadManifestKey | quote }}
   UPLOAD_MANIFEST_CACERT_PATH: {{ .Values.crawlers.configVars.uploadManifestCacertPath | quote }}
-  UPLOAD_MANIFEST_FILENAME: {{ .Values.crawlers.configVars.uploadManifestFilepath | default "/app/tmp/downloads/cumulative-manifest.json" }}
+  UPLOAD_MANIFEST_FILENAME: {{ .Values.crawlers.configVars.uploadManifestFilepath | default "/app/tmp/downloads/cumulative-manifest.json" | quote}}
   FILES_CONFIGMAP_NAME: {{ .Values.crawlers.configVars.filesConfigmap | quote }}
   CRAWLER_DOWNLOADS_PVC_NAME: {{ .Values.crawlers.configVars.crawlerDownloadsPVC | quote }}
   
