@@ -316,6 +316,13 @@ ml:
   # extraEnvVarsCM - existing ConfigMap with extra environment variables
   extraEnvVarsCM: ""
 
+  aws:
+    key:
+      accessKeyID: ""
+      secretAccessKey: ""
+    region: ""
+    s3:
+      endpoint: ""
   tls:
     enabled: true
     # auto-generate tls bundle completely
