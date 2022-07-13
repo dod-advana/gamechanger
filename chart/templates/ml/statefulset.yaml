@@ -56,6 +56,12 @@ spec:
       {{- end }}
       terminationGracePeriodSeconds: 10
       volumes:
+        - name: temp-files
+          configMap:
+            name: temp-files    
+        - name: redisdriver
+          configMap:
+            name: redisdriver-file
         {{- if .Values.ml.tls.enabled }}
         - name: tls-secret-files
           secret:
@@ -118,6 +124,12 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           volumeMounts: 
+            - name: temp-files
+              mountPath: /opt/app-root/src/gamechangerml/scripts/startFast.sh
+              subPath: startFast.sh
+            - name: redisdriver
+              mountPath: /opt/app-root/src/gamechangerml/api/utils/redisdriver.py
+              subPath: redisdriver.py
           {{- if .Values.ml.persistence.enabled }}
             - name: {{ include "app.ml.pvcName" . }}
               mountPath: {{ .Values.ml.persistence.mountPath | quote }}

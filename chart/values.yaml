@@ -394,7 +394,7 @@ web:
   service:
     type: NodePort # ClusterIP
     ports:
-      http: 80
+      http: 8990
       https: 8443
     nodePorts:
       http: 31007
@@ -524,8 +524,12 @@ web:
       value: 10.194.9.105
     - name: MYSQL_HOST_MATOMO
       value: 10.194.9.69
+      # value: ""
     - name: REACT_APP_MATOMO_LINK
-      value: http://10.194.9.69
+      value: https://10.194.9.69
+      # value: ""
+    - name: IS_DECOUPLED
+      value: "true"
     - name: APPROVED_API_CALLERS
       value: >
         http://localhost:8080 http://localhost:3000 http://localhost:8080 http://localhost:8001 http://localhost:8990 http://localhost:3000 http://192.168.56.101:3000 http://10.194.9.104 http://10.194.9.122 http://10.194.9.70 http://10.194.9.81 http://10.194.9.90 http://10.194.9.100 http://10.194.9.101 http://10.194.9.102 http://10.194.9.105 http://10.194.9.109 http://10.194.9.102 http://10.194.9.110 http://10.194.9.122 http://10.194.9.114 http://10.194.9.86 http://audit.bah.com http://dev.audit.boozallencsn.com https://dev.audit.boozallencsn.com https://audit.boozallencsn.com
@@ -867,7 +871,7 @@ elasticsearch:
 postgresql:
   asSubchart: true
   nameOverride: ""
-  host: ""
+  host: "gc-postgresql"
   port: 5432
   image:
     # registry: docker.io

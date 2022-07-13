@@ -24,4 +24,5 @@ data:
   WORKERS_PER_CORE: "1"
   DOCKER_BUILDKIT: "1"
   DOCKER: "true"
+  CA_BUNDLE: {{ .Values.ml.aws.ca_bundle_path | quote }}
   

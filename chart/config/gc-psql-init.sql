@@ -1,7 +1,8 @@
 -- step 0: create dbs (idempotent)
 CREATE DATABASE game_changer;
 CREATE DATABASE "gc-orchestration";
-CREATE DATABASE uot;
+-- CREATE DATABASE uot;
+CREATE DATABASE uot WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE = 'en_US.UTF-8';
 
 -- step 1: execute sequelize on npm image
 -- ignored here
@@ -10,6 +11,18 @@ CREATE DATABASE uot;
 -- 
 -- below all occurs in default postgres db?
 -- 
+\connect game_changer
+
+INSERT INTO clone_meta (id,clone_name,search_module,export_module,display_name,title_bar_module,
+navigation_module,card_module,is_live,url,permissions_required,clone_to_advana,clone_to_gamechanger,clone_to_sipr,
+show_graph,clone_to_jupiter,show_tutorial,show_crowd_source,show_feedback,config,graph_module,main_view_module)
+VALUES (6,'gamechanger-test','policy/policySearchHandler','policy/policyExportHandler','GAMECHANGER','policy/policyTitleBarHandler',
+'policy/policyTestNavigationHandler','policy/policyCardHandler',TRUE,'gamechanger-test',TRUE,TRUE,TRUE,FALSE,
+TRUE,FALSE,FALSE,TRUE,TRUE,'{"esindex": "gamechanger"}', 'policy/policyGraphHandler','policy/policyTestMainViewHandler');
+
+-- connect to uot db instead of default db
+\connect uot
+
 -- step 3: create_um_tables.sql
 CREATE TABLE public.roles (
     id SERIAL,
@@ -49,6 +62,41 @@ CREATE TABLE IF NOT EXISTS public.users (
     PRIMARY KEY (id)
 );
 
+-- CREATE TABLE public.users (
+--     id integer NOT NULL,
+--     username text NOT NULL,
+--     displayname text NOT NULL,
+--     lastlogin timestamp with time zone,
+--     sandbox_id integer,
+--     disabled boolean DEFAULT false,
+--     "createdAt" timestamp with time zone NOT NULL,
+--     "updatedAt" timestamp with time zone NOT NULL,
+--     session_id text,
+--     email text,
+--     sub_agency text,
+--     extra_fields jsonb,
+--     favorite_apps text[]
+-- );
+
+-- CREATE SEQUENCE public.users_id_seq
+--     START WITH 1
+--     INCREMENT BY 1
+--     NO MINVALUE
+--     NO MAXVALUE
+--     CACHE 1;
+
+-- ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
+
+
+-- ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
+
+-- ALTER TABLE ONLY public.users
+--     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+-- ALTER TABLE ONLY public.users
+--     ADD CONSTRAINT users_username_key UNIQUE (username);
+
+
 CREATE TABLE IF NOT EXISTS public.roleperms (
     id SERIAL,
     roleid integer NOT NULL,
@@ -70,7 +118,7 @@ CREATE TABLE IF NOT EXISTS public.userroles (
     FOREIGN KEY (roleid) REFERENCES public.roles (id)
 );
 
--- step 4: pop_mini_RE.sql
+-- step 4: pop_mini_RE.sql, this runs before the table is made so it doesnt work
 truncate table responsibilities;
 
 INSERT INTO public.responsibilities (id, "filename", "documentTitle", "organizationPersonnel", "responsibilityText", "otherOrganizationPersonnel", "documentsReferenced") VALUES (0, 'DoDD S-5230.28.pdf', '(U) Policy for Low Observable (LO) and Counter Low Observable (CLO) Programs - THORN BAY', null, '• Contact the OPR below to obtain a copy.', null, ARRAY []::text[]);
@@ -176,3 +224,4 @@ INSERT INTO public.responsibilities (id, "filename", "documentTitle", "organizat
 
 -- step 5: create_admins.sql
 INSERT INTO admins (username) VALUES ('007') ON CONFLICT DO NOTHING;
+

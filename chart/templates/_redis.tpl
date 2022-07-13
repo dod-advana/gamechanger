@@ -9,7 +9,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 
 {{- define "app.redis.hosts" -}}
   {{- if .Values.redis.asSubchart -}}
-    {{ printf "%s-headless.%s.svc.%s" (include "app.redis.fullname" .) .Release.Namespace .Values.clusterDomain }}
+    {{ printf "%s-master.%s.svc.%s" (include "app.redis.fullname" .) .Release.Namespace .Values.clusterDomain }}
   {{- else -}}
     {{- .Values.redis.hosts -}}
   {{- end -}}
@@ -17,7 +17,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 
 {{- define "app.redis.host" -}}
   {{- if .Values.redis.asSubchart -}}
-    {{ printf "%s-headless.%s.svc.%s" (include "app.redis.fullname" .) .Release.Namespace .Values.clusterDomain }}
+    {{ printf "%s-master.%s.svc.%s" (include "app.redis.fullname" .) .Release.Namespace .Values.clusterDomain }}
   {{- else -}}
     {{- .Values.redis.hosts | first -}}
   {{- end -}}
