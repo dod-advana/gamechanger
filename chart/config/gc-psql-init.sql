@@ -13,12 +13,9 @@ CREATE DATABASE uot WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE = 'en_US.
 -- 
 \connect game_changer
 
-INSERT INTO clone_meta (id,clone_name,search_module,export_module,display_name,title_bar_module,
-navigation_module,card_module,is_live,url,permissions_required,clone_to_advana,clone_to_gamechanger,clone_to_sipr,
-show_graph,clone_to_jupiter,show_tutorial,show_crowd_source,show_feedback,config,graph_module,main_view_module)
-VALUES (6,'gamechanger-test','policy/policySearchHandler','policy/policyExportHandler','GAMECHANGER','policy/policyTitleBarHandler',
-'policy/policyTestNavigationHandler','policy/policyCardHandler',TRUE,'gamechanger-test',TRUE,TRUE,TRUE,FALSE,
-TRUE,FALSE,FALSE,TRUE,TRUE,'{"esindex": "gamechanger"}', 'policy/policyGraphHandler','policy/policyTestMainViewHandler');
+INSERT INTO clone_meta (clone_name, search_module, export_module, "createdAt", "updatedAt", display_name, title_bar_module, navigation_module, card_module, is_live, url, permissions_required, clone_to_sipr, show_graph, show_tutorial, show_crowd_source, show_feedback, graph_module, main_view_module, available_at) VALUES ('gamechanger', 'policy/policySearchHandler', 'simple/simpleExportHandler', '2021-03-17 13:35:17.526000', '2021-03-17 13:35:19.927000', 'GAMECHANGER', 'policy/policyTitleBarHandler', 'policy/policyNavigationHandler', 'policy/policyCardHandler', true, 'gamechanger', false, false, true, true, true, true, 'policy/policyGraphHandler', 'policy/policyMainViewHandler', '{"all", "localhost"}') ON CONFLICT (clone_name) DO NOTHING;
+
+INSERT INTO users ("user_id", cn, first_name, last_name, extra_fields, is_super_admin) VALUES (7890123456, 'TEST.TEST.T.7890123456' ,'TEST','TEST', '{"gamechanger": {"is_beta": true, "is_admin": true, "is_internal": true},  "clones_visited": ["gamechanger"]}', TRUE);
 
 -- connect to uot db instead of default db
 \connect uot
@@ -223,5 +220,5 @@ INSERT INTO public.responsibilities (id, "filename", "documentTitle", "organizat
 INSERT INTO public.responsibilities (id, "filename", "documentTitle", "organizationPersonnel", "responsibilityText", "otherOrganizationPersonnel", "documentsReferenced") VALUES (99, 'DoDI 1235.12 CH 1.pdf', 'Accessing the Reserve Components (RC)', null, 'd. Coordinates DoD assistance to lead federal departments and agencies in support of federal, State, and local officials in response to major disasters or emergencies in accordance with DoDD 3025.18 (Reference (v)) and DoDI 3025.21 (Reference (w)).', 'State|DoDD', ARRAY ['DoDD 3025.18', 'DoDI 3025.21']::text[]);
 
 -- step 5: create_admins.sql
-INSERT INTO admins (username) VALUES ('007') ON CONFLICT DO NOTHING;
+INSERT INTO admins (username) VALUES ('TEST.TEST.7890123456') ON CONFLICT DO NOTHING;
 
