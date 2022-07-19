@@ -32,7 +32,7 @@ Returns first hostname of either given or subchart es hosts; since templates onl
 
 {{- define "app.elasticsearch.port" -}}
 {{- if .Values.elasticsearch.asSubchart -}}
-    {{- .Values.elasticsearch.master.service.port -}}
+    {{- .Values.elasticsearch.service.ports.restAPI -}}
 {{- else -}}
     {{- .Values.elasticsearch.port -}}
 {{- end -}}

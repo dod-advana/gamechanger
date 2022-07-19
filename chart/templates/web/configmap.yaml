@@ -13,8 +13,8 @@ metadata:
   namespace: {{ .Release.Namespace }}
 data:
   GAMECHANGER_ELASTICSEARCH_HOST: {{ include "app.elasticsearch.host" . | quote }}
-  GAMECHANGER_ELASTICSEARCH_PORT: "9200"
-  {{- if .Values.elasticsearch.security.enabled }}
+  GAMECHANGER_ELASTICSEARCH_PORT: {{ include "app.elasticsearch.port" . | quote }}
+  {{- if .Values.elasticsearch.security.tls.restEncryption }}
   GAMECHANGER_ELASTICSEARCH_PROTOCOL: "https"
   {{- else }}
   GAMECHANGER_ELASTICSEARCH_PROTOCOL: "http"
