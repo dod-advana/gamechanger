@@ -32,7 +32,7 @@ Returns first hostname of either given or subchart es hosts; since templates onl
 
 {{- define "app.elasticsearch.port" -}}
 {{- if .Values.elasticsearch.asSubchart -}}
-    {{- .Values.elasticsearch.master.service.port -}}
+    {{- .Values.elasticsearch.coordinating.service.port -}}
 {{- else -}}
     {{- .Values.elasticsearch.port -}}
 {{- end -}}
@@ -59,6 +59,7 @@ Return the Elasticsearch authentication credentials secret name
 {{- coalesce .Values.elasticsearch.security.existingSecret (include "app.elasticsearch.fullname" .) -}}
 {{- end -}}
 
+
 {{- define "app.elasticsearch.security.envVars" -}}
 {{- if .Values.elasticsearch.asSubchart -}}
 - name: GAMECHANGER_ELASTICSEARCH_PASSWORD
@@ -71,21 +72,25 @@ Return the Elasticsearch authentication credentials secret name
     secretKeyRef:
       name: {{ include "elasticsearch.secretName" .Subcharts.elasticsearch }}
       key: elasticsearch-password
+
 - name: GAMECHANGER_ELASTICSEARCH_CA
   valueFrom:
     secretKeyRef:
       name: {{ include "elasticsearch.master.tlsSecretName" .Subcharts.elasticsearch }}
       key: ca.crt
+
 - name: EDA_ELASTICSEARCH_PASSWORD
   valueFrom:
     secretKeyRef:
       name: {{ include "elasticsearch.secretName" .Subcharts.elasticsearch }}
       key: elasticsearch-password
+# {{/*
 - name: EDA_ELASTICSEARCH_CA
   valueFrom:
     secretKeyRef:
       name: {{ include "elasticsearch.master.tlsSecretName" .Subcharts.elasticsearch }}
       key: ca.crt
+# */}}
 {{- else -}}
 - name: GAMECHANGER_ELASTICSEARCH_PASSWORD
   valueFrom:

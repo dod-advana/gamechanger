@@ -1,6 +1,29 @@
-{{- range .Values.crawlers.persistentVolumeClaims }}
----
-apiVersion: v1
+{{- if and (not .Values.crawlers.persistentVolumeClaims.downloads.existingClaim ) .Values.crawlers.persistentVolumeClaims.downloads.enabled }}
 kind: PersistentVolumeClaim
-{{ . | toYaml | trim }}
+apiVersion: v1
+metadata:
+  name: gc-{{ .Release.Name }}-crawler-downloads
+  labels:
+    release: {{ .Release.Name }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    heritage: {{ .Release.Service }}
+    {{- with .Values.crawlers.persistentVolumeClaims.downloads.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- if .Values.crawlers.persistentVolumeClaims.downloads.annotations}}
+    {{- toYaml .Values.crawlers.persistentVolumeClaims.downloads.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  accessModes: [{{ .Values.crawlers.persistentVolumeClaims.downloads.accessMode | quote }}]
+  resources:
+    requests:
+      storage: {{ .Values.crawlers.persistentVolumeClaims.downloads.size | quote }}
+  {{- if .Values.crawlers.persistentVolumeClaims.downloads.storageClassName }}
+  {{- if (eq "-" .Values.crawlers.persistentVolumeClaims.downloads.storageClassName) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: "{{ .Values.crawlers.persistentVolumeClaims.downloads.storageClassName }}"
+  {{- end }}
+  {{- end }}
 {{- end }}

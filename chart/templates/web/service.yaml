@@ -13,7 +13,7 @@ metadata:
 spec:
   type: {{ .Values.web.service.type }}
   ports:
-    - name: web-http
+    - name: http
       port: {{ .Values.web.service.ports.http }}
       targetPort: http
       protocol: TCP
@@ -23,7 +23,7 @@ spec:
       nodePort: null
       {{- end }}
     {{- if .Values.web.tls.enabled }}
-    - name: web-https
+    - name: https
       port: {{ .Values.web.service.ports.https }}
       targetPort: https
       protocol: TCP

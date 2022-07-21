@@ -14,6 +14,11 @@ metadata:
 data:
   GAMECHANGER_ELASTICSEARCH_HOST: {{ include "app.elasticsearch.host" . | quote }}
   GAMECHANGER_ELASTICSEARCH_PORT: {{ include "app.elasticsearch.port" . | quote }}
+  {{- if .Values.elasticsearch.security.tls.restEncryption }}
+  GAMECHANGER_ELASTICSEARCH_PROTOCOL: "https"
+  {{- else }}
+  GAMECHANGER_ELASTICSEARCH_PROTOCOL: "http"
+  {{- end }}
   EDA_ELASTICSEARCH_HOST: {{ include "app.elasticsearch.host" . | quote }}
   EDA_ELASTICSEARCH_PORT: {{ include "app.elasticsearch.port" . | quote }}
   POSTGRES_HOST_GAME_CHANGER: {{ include "app.postgresql.host" . | quote }}

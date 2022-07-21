@@ -258,8 +258,8 @@ ml:
       http: 5000
       https: 443
     nodePorts:
-      http: 31009
-      https: 31209
+      http: 31010
+      https: 31210
     extraPorts:
       []
       # - port: 443
@@ -316,6 +316,13 @@ ml:
   # extraEnvVarsCM - existing ConfigMap with extra environment variables
   extraEnvVarsCM: ""
 
+  aws:
+    key:
+      accessKeyID: ""
+      secretAccessKey: ""
+    region: ""
+    s3:
+      endpoint: ""
   tls:
     enabled: true
     # auto-generate tls bundle completely
@@ -325,7 +332,7 @@ ml:
     # where tls files should be mounted (either auto generated or provided as files)
     mountPath: "/opt/app-root/src/secrets"
     # if no existing secret, these should be set and mounted
-    # Certificate file on ML container(s) 
+    # Certificate file on ML container(s)
     certFilename: "tls.crt"
     # Path to cert's key file on ML container(s)
     certKeyFilename: "tls.key"
@@ -387,11 +394,11 @@ web:
   service:
     type: NodePort # ClusterIP
     ports:
-      http: 80
+      http: 8990
       https: 8443
     nodePorts:
-      http: 31007
-      https: 31207
+      http: 31008
+      https: 31208
     extraPorts:
       []
       # - port: 443
@@ -428,6 +435,8 @@ web:
       value: "5000"
     - name: REACT_APP_COOKIE_DOMAIN
       value: "dev.advana.boozallencsn.com"
+    - name: NODE_EXTRA_CA_CERTS
+      value: "/opt/app-root/src/backend/es-certs/ca.crt"
     - name: CDO_ELASTICSEARCH_INDEX
       value: gc-cdo
     - name: EDA_ELASTICSEARCH_INDEX
@@ -517,8 +526,12 @@ web:
       value: 10.194.9.105
     - name: MYSQL_HOST_MATOMO
       value: 10.194.9.69
+      # value: ""
     - name: REACT_APP_MATOMO_LINK
-      value: http://10.194.9.69
+      value: https://10.194.9.69
+      # value: ""
+    - name: IS_DECOUPLED
+      value: "true"
     - name: APPROVED_API_CALLERS
       value: >
         http://localhost:8080 http://localhost:3000 http://localhost:8080 http://localhost:8001 http://localhost:8990 http://localhost:3000 http://192.168.56.101:3000 http://10.194.9.104 http://10.194.9.122 http://10.194.9.70 http://10.194.9.81 http://10.194.9.90 http://10.194.9.100 http://10.194.9.101 http://10.194.9.102 http://10.194.9.105 http://10.194.9.109 http://10.194.9.102 http://10.194.9.110 http://10.194.9.122 http://10.194.9.114 http://10.194.9.86 http://audit.bah.com http://dev.audit.boozallencsn.com https://dev.audit.boozallencsn.com https://audit.boozallencsn.com
@@ -548,16 +561,18 @@ crawlers:
   #   Tips:
   #   - when troubleshooting, set to 1 to avoid dealing with complications of load-balanced traffic
   replicaCount: 1
-
   persistentVolumeClaims:
-    - metadata:
-        name: gc-crawler-downloads
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: 30Gi
+    downloads:
+      # Enable persistent volume for storing crawler downloads
+      enabled: false
+      # Volume size for downloads
+      size: 1Gi
+      # If using a custom storageClass, pass name here
+      storageClassName:
+      # access mode of the persistent volume
+      accessMode: ReadWriteOnce
+      ## optional subpath for dag volume mount
+      subPath: ~
 
   # Airflow crawler configs
   images:
@@ -565,7 +580,7 @@ crawlers:
       registry: ""
       repository: "gc-crawler-downloader-test"
       tag: "latest"
-    scanner: 
+    scanner:
       registry: ""
       repository: "gc-crawler-downloader-test"
       tag: "latest"
@@ -575,37 +590,39 @@ crawlers:
       tag: "latest"
 
   configVars:
-    scanConcurrency:
-    awsConnID:
-    localCrawlerOutputLocation:
-    localCrawlerDownloadDirectory:
-    localPreviousManifestLocation:
+    scanConcurrency: ""
+    awsConnID: ""
+    localCrawlerOutputLocation: ""
+    localCrawlerDownloadDirectory: ""
+    localPreviousManifestLocation: ""
     # remove? default must be 'y' if running via airflow, since there will be no user input
-    crawlerSkipConfirmation:
+    crawlerSkipConfirmation: ""
 
-    downloadManifestBucket:
-    downloadManifestKey:
-    downloadManifestCacertPath:
+    downloadManifestBucket: ""
+    downloadManifestKey: ""
+    downloadManifestCacertPath: ""
 
     # remove? should be same as localPreviousManifestLocation
-    downloadManifestLocalDestination:
+    downloadManifestLocalDestination: ""
 
-    scanUploadBucket:
-    scanDeleteAfterUpload:
-    scanS3Dir:
-    scanSkipS3Upload:
+    scanUploadBucket: ""
+    scanDeleteAfterUpload: ""
+    scanS3Dir: ""
+    scanSkipS3Upload: ""
+    partitionBucket: ""
+    partitionDirectory: ""
 
-    uploadManifestBucket:
-    uploadManifestKey:
-    uploadManifestCacertPath:
-    uploadManifestFilepath:
+    uploadManifestBucket: ""
+    uploadManifestKey: ""
+    uploadManifestCacertPath: ""
+    uploadManifestFilepath: ""
+    crawlerDownloadsPVC: ""
+    filesConfigmap: ""
 
   configFiles:
     cacert.pem: |-
 
     monday.txt: |-
-      us_code_spider
-      tradoc_spider
 
     tuesday.txt: |-
 
@@ -619,8 +636,6 @@ crawlers:
 
     sunday.txt: |-
 
-  updateStrategy:
-    type: RollingUpdate
   ## @param crawlers.existingSecret Permits specifying a secret name for crawler configuration. Should include {}
   existingSecret: ""
 
@@ -825,22 +840,43 @@ elasticsearch:
     tls:
       autoGenerated: true
       # if not autogenerated, or not using subchart, set this to the filename in ./certs/ with the elasticearch CA pem
-      certCAFilename: "ca.crt"
+      # certCAFilename: "ca.crt"
 
   master:
     replicas: 3
     podSecurityContext:
       enabled: true
+    resources:
+      limits: {}
+      requests:
+        cpu: 25m
+        memory: 256Mi
+    livenessProbe:
+      enabled: false
   coordinating:
     replicas: 1
     podSecurityContext:
       enabled: true
+    resources:
+      limits: {}
+      requests:
+        cpu: 25m
+        memory: 256Mi
+    livenessProbe:
+      enabled: false
   data:
     replicas: 1
     persistence:
       size: 20Gi
+    resources:
+      limits: {}
+      requests:
+        cpu: 25m
+        memory: 256Mi
     podSecurityContext:
       enabled: true
+    livenessProbe:
+      enabled: false
 
 ## @section PostgreSQL Parameters
 
@@ -858,7 +894,7 @@ elasticsearch:
 postgresql:
   asSubchart: true
   nameOverride: ""
-  host: ""
+  host: "gc-postgresql"
   port: 5432
   image:
     # registry: docker.io
@@ -909,7 +945,7 @@ redis:
 
   hosts: []
   port: ""
-  
+
   serviceAccount:
     create: true
   ## @param redis.nameOverride String to partially override common.names.fullname template with a string (will prepend the release name)
@@ -1112,7 +1148,7 @@ minio:
   ##
   resources:
     requests:
-      memory: 8Gi
+      memory: 4Gi
 
   ## List of policies to be created after minio install
   ##

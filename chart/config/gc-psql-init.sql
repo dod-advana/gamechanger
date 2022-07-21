@@ -1,7 +1,8 @@
 -- step 0: create dbs (idempotent)
 CREATE DATABASE game_changer;
 CREATE DATABASE "gc-orchestration";
-CREATE DATABASE uot;
+-- CREATE DATABASE uot;
+CREATE DATABASE uot WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE = 'en_US.UTF-8';
 
 -- step 1: execute sequelize on npm image
 -- ignored here
@@ -10,6 +11,15 @@ CREATE DATABASE uot;
 -- 
 -- below all occurs in default postgres db?
 -- 
+\connect game_changer
+
+INSERT INTO clone_meta (clone_name, search_module, export_module, "createdAt", "updatedAt", display_name, title_bar_module, navigation_module, card_module, is_live, url, permissions_required, clone_to_sipr, show_graph, show_tutorial, show_crowd_source, show_feedback, graph_module, main_view_module, available_at) VALUES ('gamechanger', 'policy/policySearchHandler', 'simple/simpleExportHandler', '2021-03-17 13:35:17.526000', '2021-03-17 13:35:19.927000', 'GAMECHANGER', 'policy/policyTitleBarHandler', 'policy/policyNavigationHandler', 'policy/policyCardHandler', true, 'gamechanger', false, false, true, true, true, true, 'policy/policyGraphHandler', 'policy/policyMainViewHandler', '{"all", "localhost"}') ON CONFLICT (clone_name) DO NOTHING;
+
+INSERT INTO users ("user_id", cn, first_name, last_name, extra_fields, is_super_admin) VALUES (7890123456, 'TEST.TEST.T.7890123456' ,'TEST','TEST', '{"gamechanger": {"is_beta": true, "is_admin": true, "is_internal": true},  "clones_visited": ["gamechanger"]}', TRUE);
+
+-- connect to uot db instead of default db
+\connect uot
+
 -- step 3: create_um_tables.sql
 CREATE TABLE public.roles (
     id SERIAL,
@@ -49,6 +59,41 @@ CREATE TABLE IF NOT EXISTS public.users (
     PRIMARY KEY (id)
 );
 
+-- CREATE TABLE public.users (
+--     id integer NOT NULL,
+--     username text NOT NULL,
+--     displayname text NOT NULL,
+--     lastlogin timestamp with time zone,
+--     sandbox_id integer,
+--     disabled boolean DEFAULT false,
+--     "createdAt" timestamp with time zone NOT NULL,
+--     "updatedAt" timestamp with time zone NOT NULL,
+--     session_id text,
+--     email text,
+--     sub_agency text,
+--     extra_fields jsonb,
+--     favorite_apps text[]
+-- );
+
+-- CREATE SEQUENCE public.users_id_seq
+--     START WITH 1
+--     INCREMENT BY 1
+--     NO MINVALUE
+--     NO MAXVALUE
+--     CACHE 1;
+
+-- ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
+
+
+-- ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
+
+-- ALTER TABLE ONLY public.users
+--     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+-- ALTER TABLE ONLY public.users
+--     ADD CONSTRAINT users_username_key UNIQUE (username);
+
+
 CREATE TABLE IF NOT EXISTS public.roleperms (
     id SERIAL,
     roleid integer NOT NULL,
@@ -70,7 +115,7 @@ CREATE TABLE IF NOT EXISTS public.userroles (
     FOREIGN KEY (roleid) REFERENCES public.roles (id)
 );
 
--- step 4: pop_mini_RE.sql
+-- step 4: pop_mini_RE.sql, this runs before the table is made so it doesnt work
 truncate table responsibilities;
 
 INSERT INTO public.responsibilities (id, "filename", "documentTitle", "organizationPersonnel", "responsibilityText", "otherOrganizationPersonnel", "documentsReferenced") VALUES (0, 'DoDD S-5230.28.pdf', '(U) Policy for Low Observable (LO) and Counter Low Observable (CLO) Programs - THORN BAY', null, '• Contact the OPR below to obtain a copy.', null, ARRAY []::text[]);
@@ -175,4 +220,5 @@ INSERT INTO public.responsibilities (id, "filename", "documentTitle", "organizat
 INSERT INTO public.responsibilities (id, "filename", "documentTitle", "organizationPersonnel", "responsibilityText", "otherOrganizationPersonnel", "documentsReferenced") VALUES (99, 'DoDI 1235.12 CH 1.pdf', 'Accessing the Reserve Components (RC)', null, 'd. Coordinates DoD assistance to lead federal departments and agencies in support of federal, State, and local officials in response to major disasters or emergencies in accordance with DoDD 3025.18 (Reference (v)) and DoDI 3025.21 (Reference (w)).', 'State|DoDD', ARRAY ['DoDD 3025.18', 'DoDI 3025.21']::text[]);
 
 -- step 5: create_admins.sql
-INSERT INTO admins (username) VALUES ('007') ON CONFLICT DO NOTHING;
+INSERT INTO admins (username) VALUES ('TEST.TEST.7890123456') ON CONFLICT DO NOTHING;
+
