@@ -54,6 +54,9 @@ diagnosticMode:
 externalDomain: "" #"dev.advana.boozallencsn.com"
 ingress:
   enabled: true
+  ## @param ingress.certManager Set to true to add the `kubernetes.io/tls-acme: "true"` annotation to gamechanger ingresses
+  ## 
+  certManager: true
   ## @param ingress.controller The ingress controller type. Currently supports `default`, `gce` and `ncp`
   ## leave as `default` for most ingress controllers.
   ## set to `gce` if using the GCE ingress controller
