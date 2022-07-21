@@ -55,7 +55,10 @@ spec:
     - host: {{ printf "bolt-%s" $fqdn | quote }}
       http:
         paths:
-          - path: /
+          - path: {{ .web_path }}
+            {{- if eq "true" (include "common.ingress.supportsPathType" .) }}
+            pathType: {{ .Values.ingress.neo4j.pathType }}
+            {{- end }}
             backend: {{- include "common.ingress.backend" (dict "serviceName" (include "app.neo4j.name" .) "servicePort" "bolt" "context" $) | nindent 14 }}
     {{- end }}
   {{- if or (and .Values.ingress.neo4j.tls (or (include "common.ingress.certManagerRequest" ( dict "annotations" .Values.ingress.neo4j.annotations )) .Values.ingress.neo4j.selfSigned)) .Values.ingress.neo4j.extraTls }}
