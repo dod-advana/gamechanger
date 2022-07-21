@@ -1,4 +1,5 @@
 {{- $confFileName := "config/neo4j-community.conf" -}}
+{{- $fqdn := include "app.neo4j.fqdn" . }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -61,7 +62,7 @@ data:
   dbms.ssl.policy.bolt.enabled: "true"
   dbms.ssl.policy.https.enabled: "true"
   {{- end }}
-  
+  dbms.connector.bolt.advertised_address: {{ printf "bolt-%s:443" $fqdn | quote }}
   {{- with .Values.neo4j.config }}
   {{- if hasKey . "dbms.jvm.additional" }}
     {{- fail "dbms.jvm.additional properties cannot be set in values.config. Set additional JVM arguments in values.jvm.additionalJvmArguments" }}

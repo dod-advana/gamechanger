@@ -50,7 +50,7 @@ spec:
         {{- end }}
       {{- end }}
       serviceAccountName: {{ include "app.neo4j.serviceAccountName" . }}
-      {{- with .Values.podSecurityContext }}
+      {{- with .Values.neo4j.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -108,6 +108,8 @@ spec:
               value: "/config/"
             - name: HELM_NEO4J_VERSION
               value: "{{ .Values.neo4j.version }}"
+            - name: EXTENDED_CONF
+              value: "yes"
             - name: HELM_CHART_VERSION
               value: "{{ .Chart.Version }}"
             - name: POD_NAME
@@ -135,7 +137,10 @@ spec:
             limits: {{ . | toYaml | nindent 14 }}
             {{- end }}
           {{- end }}
-          securityContext: {{ omit .Values.neo4j.securityContext "fsGroupChangePolicy" "fsGroup" | toYaml  | nindent 14 }}
+          {{- with .Values.neo4j.containerSecurityContext }}
+          securityContext: 
+            {{- toYaml . | nindent 14 }}
+          {{- end }}
           volumeMounts:
             - name: "neo4j-conf"
               mountPath: "/config/neo4j.conf"
@@ -198,7 +203,7 @@ spec:
         {{- end }}
         - name: neo4j-conf
           projected:
-            defaultMode: 0444
+            defaultMode: 0440
             sources:
               - configMap:
                   name: {{ include "app.neo4j.configMapName" . | printf "%s-defaults" | quote }}

@@ -1,0 +1,73 @@
+{{- if .Values.ingress.neo4j.enabled }}
+{{- if eq .Values.ingress.controller "gce" }}
+  {{- $_ := set . "web_path" "/*" -}}
+{{- else if eq .Values.ingress.controller "ncp" }}
+  {{- $_ := set . "web_path" "/.*" -}}
+{{- else }}
+  {{- $_ := set . "web_path" "/" -}}
+{{- end }}
+{{- $fqdn := include "app.neo4j.fqdn" . }}
+apiVersion: {{ template "common.capabilities.ingress.apiVersion" . }}
+kind: Ingress
+metadata:
+  name: {{ include "app.neo4j.name" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+  annotations:
+  {{- if .Values.neo4j.tls.enabled }}
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  {{- end }}
+  {{- if eq .Values.ingress.controller "ncp" }}
+    ncp/use-regex: "true"
+    {{- if .Values.neo4j.tls.enabled }}
+    ncp/http-redirect: "true"
+    {{- end }}
+  {{- end }}
+  {{- if .Values.ingress.neo4j.annotations }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.ingress.neo4j.annotations "context" .) | nindent 4 }}
+  {{- end }}
+  {{- if .Values.commonAnnotations }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" .) | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if eq .Values.ingress.controller "ncp" }}
+  backend: {{- include "common.ingress.backend" (dict "serviceName" (include "app.neo4j.name" .) "servicePort" (ternary "https" "http" .Values.neo4j.tls.enabled) "context" $) | nindent 4 }}
+  {{- end }}
+  {{- if and .Values.ingress.ingressClassName (eq "true" (include "common.ingress.supportsIngressClassname" .)) }}
+  ingressClassName: {{ .Values.ingress.ingressClassName | quote }}
+  {{- end }}
+  rules:
+    {{- if .Values.ingress.neo4j.hostname }}
+    - host: {{ $fqdn | quote }}
+      http:
+        paths:
+          {{- if .Values.ingress.neo4j.extraPaths }}
+          {{- toYaml .Values.ingress.neo4j.extraPaths | nindent 10 }}
+          {{- end }}
+          - path: {{ .web_path }}
+            {{- if eq "true" (include "common.ingress.supportsPathType" .) }}
+            pathType: {{ .Values.ingress.neo4j.pathType }}
+            {{- end }}
+            backend: {{- include "common.ingress.backend" (dict "serviceName" (include "app.neo4j.name" .) "servicePort" (ternary "https" "http" .Values.neo4j.tls.enabled) "context" $) | nindent 14 }}
+    - host: {{ printf "bolt-%s" $fqdn | quote }}
+      http:
+        paths:
+          - path: /
+            backend: {{- include "common.ingress.backend" (dict "serviceName" (include "app.neo4j.name" .) "servicePort" "bolt" "context" $) | nindent 14 }}
+    {{- end }}
+  {{- if or (and .Values.ingress.neo4j.tls (or (include "common.ingress.certManagerRequest" ( dict "annotations" .Values.ingress.neo4j.annotations )) .Values.ingress.neo4j.selfSigned)) .Values.ingress.neo4j.extraTls }}
+  tls:
+    {{- if and .Values.ingress.neo4j.tls (or (include "common.ingress.certManagerRequest" ( dict "annotations" .Values.ingress.neo4j.annotations )) .Values.ingress.neo4j.selfSigned) }}
+    - hosts:
+        - {{ $fqdn | quote }}
+        - {{ printf "bolt-%s" $fqdn | quote }}
+      secretName: {{ printf "%s-ing-tls" $fqdn }}
+    {{- end }}
+    {{- if .Values.ingress.neo4j.extraTls }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.ingress.neo4j.extraTls "context" $) | nindent 4 }}
+    {{- end }}
+  {{- end }}
+{{- end }}

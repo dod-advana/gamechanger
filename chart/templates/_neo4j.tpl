@@ -8,6 +8,16 @@
   {{- printf "%s-%s" (include "common.names.fullname" .) (default "neo4j" .Values.neo4j.nameOverride) -}}
 {{- end -}}
 
+{{- define "app.neo4j.fqdn" -}}
+{{ $name := default (include "app.neo4j.name" . | lower ) .Values.ingress.neo4j.hostname }}
+{{- if .Values.externalDomain -}}
+{{- printf "%s.%s" $name .Values.externalDomain -}}
+{{- else -}}
+{{ printf "%s" $name }}
+{{- end -}}
+{{- end -}}
+
+
 {{- define "app.neo4j.host" -}}
 {{- if .Values.neo4j.asSubchart -}}
   {{ printf "%s.%s.svc.%s" (include "app.neo4j.name" .) .Release.Namespace .Values.clusterDomain }}
