@@ -21,7 +21,7 @@ services:
     depends_on:
       - redis
     entrypoint:
-      - "/bin/bash"
+      - "/bin/sh"
       - "-o"
       - "nounset"
       - "-c"
@@ -45,7 +45,7 @@ services:
       - "-c"
     command:
       - |
-        until curl -fs --connect-timeout 5 web:8990/ &>/dev/null ; do
+        until curl -fs gc-web:8990/health &>/dev/null ; do
           >&2 echo "Web frontend/backend is unavailable - sleeping"
           sleep 5
         done
@@ -65,7 +65,6 @@ services:
       - |
         until curl -fs --connect-timeout 10 ml-api:5000/ &>/dev/null ; do
           >&2 echo "ML API is unavailable - sleeping"
-          sleep 10
         done
     networks:
       - app-net
@@ -79,6 +78,8 @@ services:
       PGHOST: postgres
       PGUSER: postgres
       PGDATABASE: postgres
+    volumes:
+      - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/sql/"
     entrypoint:
       - "/bin/bash"
       - "-o"
@@ -90,6 +91,12 @@ services:
           >&2 echo "Postgres is unavailable - sleeping"
           sleep 5
         done
+        psql -c 'DROP DATABASE IF EXISTS game_changer;'
+        psql -c 'DROP DATABASE IF EXISTS "gc-orchestration";'
+        psql -c 'CREATE DATABASE game_changer;'
+        psql -c 'CREATE DATABASE "gc-orchestration";'
+        psql -c 'DROP DATABASE IF EXISTS matomo;'
+        psql -c 'CREATE DATABASE matomo;'
     networks:
       - app-net
 
@@ -118,7 +125,7 @@ services:
       PGPASSWORD: password
       PGHOST: postgres
       PGUSER: postgres
-      PGDATABASE: postgres
+      PGDATABASE: game_changer
     entrypoint:
       - "/bin/bash"
       - "-o"
@@ -129,13 +136,13 @@ services:
       - "nounset"
       - "-c"
     volumes:
-      - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/sql/:Z"
+      - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/sql/"
     command:
       - |
         psql -f /tmp/sql/pop_mini_RE.sql
-        psql -f /tmp/sql/create_admins.sql
     networks:
       - app-net
+
 
   _postgres_config_step_3_setup_um_schema:
     image: "${GC_POSTGRES_IMAGE}"
@@ -145,7 +152,7 @@ services:
       PGPASSWORD: password
       PGHOST: postgres
       PGUSER: postgres
-      PGDATABASE: postgres
+      PGDATABASE: game_changer
     entrypoint:
       - "/bin/bash"
       - "-o"
@@ -156,9 +163,11 @@ services:
       - "nounset"
       - "-c"
     volumes:
-      - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/sql/:Z"
+      - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/sql/"
     command:
       - |
+        psql -f /tmp/sql/create_clones.sql
+        psql -f /tmp/sql/create_admins.sql
         psql -f /tmp/sql/create_um_tables.sql
     networks:
       - app-net
@@ -166,7 +175,7 @@ services:
   _postgres_config_step_2_setup_data_schema:
     image: "${GC_DATA_PIPELINES_IMAGE}"
     volumes:
-      - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered/:Z"
+      - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered"
     command:
       - "/bin/bash"
       - "-o"
@@ -186,8 +195,8 @@ services:
     environment:
       POSTGRES_HOST_GAME_CHANGER: postgres
       POSTGRES_HOST_GC_ORCHESTRATION: postgres
-      POSTGRES_DB_GAME_CHANGER: postgres
-      POSTGRES_DB_GC_ORCHESTRATION: postgres
+      POSTGRES_DB_GAME_CHANGER: game_changer
+      POSTGRES_DB_GC_ORCHESTRATION: gc-orchestration
       POSTGRES_USER_GAME_CHANGER: postgres
       POSTGRES_USER_GC_ORCHESTRATION: postgres
       POSTGRES_PASSWORD_GAME_CHANGER: password
@@ -201,8 +210,11 @@ services:
       - "-o"
       - "nounset"
       - "-c"
+    volumes:
+      - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/sql/"
     command:
       - |
+        cd /opt/app-root/src/backend
         _urlenc_pass=$$(2>/dev/null node -e "console.log(encodeURIComponent(process.env.POSTGRES_PASSWORD_GAME_CHANGER))")
         sequelize db:migrate \
           --options-path ./.sequelize-game_changer \
@@ -236,7 +248,7 @@ services:
         (mc ls s3-server | grep -q $$BUCKET_NAME) || mc mb s3-server/"$${BUCKET_NAME}"
     networks:
       - app-net
-  
+
   _update_primary_clone_config:
     image: "${GC_DATA_PIPELINES_IMAGE}"
     user: root
@@ -246,9 +258,9 @@ services:
       PGPASSWORD: password
       PGHOST: postgres
       PGUSER: postgres
-      PGDATABASE: postgres
+      PGDATABASE: game_changer
     volumes:
-      - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/scripts/:Z"
+      - "./deploy/build/gamechanger-web/backend/node_app/init:/tmp/scripts"
     entrypoint:
       - "/bin/bash"
       - "-o"
@@ -264,12 +276,12 @@ services:
         psql -f /tmp/update.sql
     networks:
       - app-net
-  
+
   _ensure_and_populate_basic_es_indices:
     image: "${GC_DATA_PIPELINES_IMAGE}"
     user: root
     volumes:
-      - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered/:Z"
+      - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered"
     entrypoint:
       - "/bin/bash"
       - "-o"
@@ -327,4 +339,3 @@ services:
         python -m configuration init --app-config docker --elasticsearch-config local docker
     networks:
       - app-net
-    

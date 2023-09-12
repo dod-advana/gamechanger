@@ -1,3 +1,4 @@
+---
 services:
   _build_web_image:
     image: "${GC_WEB_IMAGE}"
@@ -29,8 +30,8 @@ services:
       context: "./deploy/build/gamechanger-ml/"
       dockerfile: "./gamechangerml/api/fastapi/cpu.mlapp.Dockerfile"
       args:
-        APP_UID: 1001
-        APP_GID: 1001
+        APP_UID: 1000
+        APP_GID: 1000
     entrypoint:
       - echo
       - "[INFO] ML API image build completed."

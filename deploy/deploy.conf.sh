@@ -27,7 +27,7 @@ declare -A REPO_URL_MAP=(\
 
 declare -A REPO_TAG_MAP=(\
   [gamechanger-web]="dev" \
-  [gamechanger-data]="hotfix/k8s-docker-update" \
+  [gamechanger-data]="dev" \
   [gamechanger-ml]="dev" \
   [gamechanger-neo4j-plugin]="main" \
   [gamechanger-crawlers]="dev" \
@@ -39,6 +39,7 @@ declare -A REPO_DIR_MAP=(\
   [gamechanger-ml]="${DEPLOY_BUILD_DIR}/gamechanger-ml" \
   [gamechanger-neo4j-plugin]="${DEPLOY_BUILD_DIR}/gamechanger-neo4j-plugin" \
   [gamechanger-crawlers]="${DEPLOY_BUILD_DIR}/gamechanger-crawlers" \
+  [gamechanger-postgres]="${DEPLOY_BUILD_DIR}/gamechanger-postgres" \
 )
 
 declare -A SERVICE_VAR_DIR_MAP=(\
