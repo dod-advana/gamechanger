@@ -26,7 +26,7 @@ function main() {
   compose_wrapper run -- _postgres_config_step_1_setup_web_schema
   compose_wrapper run -- _postgres_config_step_2_setup_data_schema
   compose_wrapper run -- _postgres_config_step_3_setup_um_schema
-  # compose_wrapper run -- _postgres_config_step_4_seed_app_tables
+  compose_wrapper run -- _postgres_config_step_4_seed_app_tables
   compose_wrapper run -- _ensure_and_populate_basic_es_indices
   #compose_wrapper run -- _update_primary_clone_config
 

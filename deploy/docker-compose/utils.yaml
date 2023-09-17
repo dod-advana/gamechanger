@@ -93,10 +93,10 @@ services:
         done
         psql -c 'DROP DATABASE IF EXISTS game_changer;'
         psql -c 'DROP DATABASE IF EXISTS "gc-orchestration";'
+        psql -c 'DROP DATABASE IF EXISTS "uot";'
         psql -c 'CREATE DATABASE game_changer;'
         psql -c 'CREATE DATABASE "gc-orchestration";'
-        psql -c 'DROP DATABASE IF EXISTS matomo;'
-        psql -c 'CREATE DATABASE matomo;'
+        psql -c "CREATE DATABASE uot WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE = 'en_US.UTF-8';"
     networks:
       - app-net
 
@@ -139,7 +139,7 @@ services:
       - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/sql/"
     command:
       - |
-        psql -f /tmp/sql/pop_mini_RE.sql
+        psql -f /tmp/sql/create_admins.sql
     networks:
       - app-net
 
@@ -167,7 +167,6 @@ services:
     command:
       - |
         psql -f /tmp/sql/create_clones.sql
-        psql -f /tmp/sql/create_admins.sql
         psql -f /tmp/sql/create_um_tables.sql
     networks:
       - app-net
@@ -195,12 +194,16 @@ services:
     environment:
       POSTGRES_HOST_GAME_CHANGER: postgres
       POSTGRES_HOST_GC_ORCHESTRATION: postgres
+      POSTGRES_HOST_UOT: postgres
       POSTGRES_DB_GAME_CHANGER: game_changer
       POSTGRES_DB_GC_ORCHESTRATION: gc-orchestration
+      POSTGRES_DB_UOT: uot
       POSTGRES_USER_GAME_CHANGER: postgres
       POSTGRES_USER_GC_ORCHESTRATION: postgres
+      POSTGRES_USER_UOT: postgres
       POSTGRES_PASSWORD_GAME_CHANGER: password
       POSTGRES_PASSWORD_GC_ORCHESTRATION: password
+      POSTGRES_PASSWORD_UOT: password
     entrypoint:
       - "/bin/bash"
       - "-o"
@@ -226,6 +229,12 @@ services:
           --options-path ./.sequelize-gc-orchestration \
           --env gc_orchestration \
           --url "postgresql://$${POSTGRES_USER_GC_ORCHESTRATION}:$${_urlenc_pass}@$${POSTGRES_HOST_GC_ORCHESTRATION}/$${POSTGRES_DB_GC_ORCHESTRATION}"
+
+#        _urlenc_pass=$$(2>/dev/null node -e "console.log(encodeURIComponent(process.env.POSTGRES_PASSWORD_UOT))")
+#        sequelize db:migrate \
+#          --options-path ./.sequelize-uot \
+#          --env uot \
+#          --url "postgresql://$${POSTGRES_USER_UOT}:$${_urlenc_pass}@$${POSTGRES_HOST_UOT}/$${POSTGRES_DB_UOT}"
     networks:
       - app-net
 

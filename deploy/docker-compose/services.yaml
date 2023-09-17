@@ -27,6 +27,9 @@ services:
       S3_ACCESS_KEY: "dev-access-key"
       S3_SECRET_KEY: "dev-secret-key"
       S3_ENDPOINT: "http://s3-server:9000"
+      MYSQL_HOST_MATOMO: "mysql"
+      MYSQL_USER_MATOMO: "root"
+      MYSQL_PASSWORD_MATOMO: "password"
 #      CHOKIDAR_USEPOLLING: "true"
     depends_on:
       - redis
@@ -163,9 +166,11 @@ services:
     container_name: mysql
     environment:
       - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=matomo
     command: --default-authentication-plugin=mysql_native_password
     volumes:
       - mysql:/var/lib/mysql
+    restart: always
     networks:
       - app-net
 
@@ -173,7 +178,7 @@ services:
     image: matomo:4.3
     container_name: matomo
     environment:
-      - MATOMO_DATABASE_HOST=postgres
+      - MATOMO_DATABASE_HOST=mysql
       - MATOMO_DATABASE_USERNAME=root
       - MATOMO_DATABASE_PASSWORD=password
       - MATOMO_DATABASE_DBNAME=matomo
