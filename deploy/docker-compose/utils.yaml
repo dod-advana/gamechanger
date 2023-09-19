@@ -136,10 +136,14 @@ services:
       - "nounset"
       - "-c"
     volumes:
-      - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/sql/"
+      - "./deploy/build/gamechanger-web/backend/node_app/init:/tmp/sql"
+      - "./deploy/build/gamechanger-web/backend/node_app/sql:/tmp/sql2"
     command:
       - |
         psql -f /tmp/sql/create_admins.sql
+        cd /tmp/sql2
+        psql -f ./v13-update-review-dept-code-column-refid.sql
+        psql -f ./v5-update-responsibility-data.sql
     networks:
       - app-net
 
