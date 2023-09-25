@@ -7,9 +7,9 @@ services:
     environment:
       REACT_APP_BACKEND_URL: "http://localhost:8080"
       REACT_APP_GC_DECOUPLED: "true"
-      REACT_APP_NODE_ENV: "development"
+      REACT_APP_NODE_ENV: "production"
       REACT_APP_GLUU_SSO: "disabled"
-      REACT_APP_MATOMO_LINK: "http://matomo"
+      REACT_APP_MATOMO_LINK: "matomo"
       REACT_APP_DATA_CATALOG_LINK: "http://data-catalog.local:8443"
       REACT_APP_CLASSIFICATION_BANNER: "UNCLASSIFIED"
       REACT_APP_CLASSIFICATION_BANNER_COLOR: "GREEN"

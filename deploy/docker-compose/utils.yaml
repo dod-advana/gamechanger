@@ -142,8 +142,7 @@ services:
       - |
         psql -f /tmp/sql/create_admins.sql
         cd /tmp/sql2
-        psql -f ./v13-update-review-dept-code-column-refid.sql
-        psql -f ./v5-update-responsibility-data.sql
+        psql -f ./v7-update-responsibility-data.sql
     networks:
       - app-net
 
@@ -309,17 +308,17 @@ services:
         python -m dataPipelines.gc_elasticsearch_publisher setup-index \
           -i search_history_original \
           -a search_history \
-          -m ./configuration/elasticsearch-config/local-search_history.json
+          -m ./configuration/elasticsearch-config/prod-search_history.json
 
         python -m dataPipelines.gc_elasticsearch_publisher setup-index \
           -i gamechanger_original \
           -a gamechanger \
-          -m ./configuration/elasticsearch-config/local.json
+          -m ./configuration/elasticsearch-config/prod.json
 
         python -m dataPipelines.gc_elasticsearch_publisher entity-insert \
           -i entities_original \
           -a entities \
-          -m /opt/app-root/src/configuration/elasticsearch-config/local-entities.json
+          -m /opt/app-root/src/configuration/elasticsearch-config/prod-entities.json
 
     networks:
       - app-net
@@ -349,6 +348,6 @@ services:
       - "-c"
     command:
       - |
-        python -m configuration init --app-config docker --elasticsearch-config local docker
+        python -m configuration init --app-config docker --elasticsearch-config prod docker
     networks:
       - app-net
