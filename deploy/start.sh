@@ -10,7 +10,7 @@ source "$DEPLOY_CONF"
 
 function main() {
   # start up base services
-  compose_wrapper up -d -- postgres redis neo4j elasticsearch kibana s3-server
+  compose_wrapper up -d --remove-orphans -- postgres redis elasticsearch kibana s3-server
 
   # wait until base services are up
   compose_wrapper run -- _s3_server_wait_until_ready
@@ -28,14 +28,19 @@ function main() {
   compose_wrapper run -- _postgres_config_step_3_setup_um_schema
   compose_wrapper run -- _postgres_config_step_4_seed_app_tables
   compose_wrapper run -- _ensure_and_populate_basic_es_indices
-  compose_wrapper run -- _update_primary_clone_config
+  #compose_wrapper run -- _update_primary_clone_config
 
   # start up remaining services
-  compose_wrapper up -d -- web ml-api
-  
+  compose_wrapper up -d -- ml-api
+  compose_wrapper up -d -- mysql
+  compose_wrapper up -d -- matomo
+  compose_wrapper up -d -- web
+
   # wait until remaining services are up
   compose_wrapper run -- _web_wait_until_ready
-  compose_wrapper run -- _ml_api_wait_until_ready
+  #chromium-browser --new-window "http://localhost:8080"
+
+  #compose_wrapper run -- _ml_api_wait_until_ready
 }
 
 main

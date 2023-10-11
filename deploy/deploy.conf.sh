@@ -18,19 +18,19 @@ declare -a REPO_NAMES=(\
 )
 
 declare -A REPO_URL_MAP=(\
-  [gamechanger-web]="https://github.com/dod-advana/gamechanger-web" \
-  [gamechanger-data]="https://github.com/dod-advana/gamechanger-data.git" \
-  [gamechanger-ml]="https://github.com/dod-advana/gamechanger-ml.git" \
+  [gamechanger-web]="https://github.com/neofob/gamechanger-web" \
+  [gamechanger-data]="https://github.com/neofob/gamechanger-data.git" \
+  [gamechanger-ml]="https://github.com/neofob/gamechanger-ml.git" \
   [gamechanger-neo4j-plugin]="https://github.com/dod-advana/gamechanger-neo4j-plugin.git" \
   [gamechanger-crawlers]="https://github.com/dod-advana/gamechanger-crawlers.git" \
 )
 
 declare -A REPO_TAG_MAP=(\
-  [gamechanger-web]="dev" \
-  [gamechanger-data]="hotfix/k8s-docker-update" \
-  [gamechanger-ml]="dev" \
+  [gamechanger-web]="tp-dev" \
+  [gamechanger-data]="tp-dev" \
+  [gamechanger-ml]="tp-dev" \
   [gamechanger-neo4j-plugin]="main" \
-  [gamechanger-crawlers]="dev" \
+  [gamechanger-crawlers]="4ac4f0e" \
 )
 
 declare -A REPO_DIR_MAP=(\
@@ -39,6 +39,7 @@ declare -A REPO_DIR_MAP=(\
   [gamechanger-ml]="${DEPLOY_BUILD_DIR}/gamechanger-ml" \
   [gamechanger-neo4j-plugin]="${DEPLOY_BUILD_DIR}/gamechanger-neo4j-plugin" \
   [gamechanger-crawlers]="${DEPLOY_BUILD_DIR}/gamechanger-crawlers" \
+  [gamechanger-postgres]="${DEPLOY_BUILD_DIR}/gamechanger-postgres" \
 )
 
 declare -A SERVICE_VAR_DIR_MAP=(\

@@ -6,8 +6,10 @@ SCRIPT_DIR="$(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 REPO_DIR="$(cd -- "${SCRIPT_DIR}/../" &> /dev/null && pwd)"
 DEPLOY_CONF="${SCRIPT_DIR}/deploy.conf.sh"
 
+echo "REPO_DIR=$REPO_DIR"
+
 # make sure token is passed explicitly
-export NPM_AUTH_TOKEN="${NPM_AUTH_TOKEN}"
+export NPM_AUTH_TOKEN=${NPM_AUTH_TOKEN}
 
 source "$DEPLOY_CONF"
 

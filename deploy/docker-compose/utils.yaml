@@ -21,7 +21,7 @@ services:
     depends_on:
       - redis
     entrypoint:
-      - "/bin/bash"
+      - "/bin/sh"
       - "-o"
       - "nounset"
       - "-c"
@@ -45,7 +45,7 @@ services:
       - "-c"
     command:
       - |
-        until curl -fs --connect-timeout 5 web:8990/ &>/dev/null ; do
+        until curl -fs gc-web:8990/health &>/dev/null ; do
           >&2 echo "Web frontend/backend is unavailable - sleeping"
           sleep 5
         done
@@ -65,7 +65,6 @@ services:
       - |
         until curl -fs --connect-timeout 10 ml-api:5000/ &>/dev/null ; do
           >&2 echo "ML API is unavailable - sleeping"
-          sleep 10
         done
     networks:
       - app-net
@@ -79,6 +78,8 @@ services:
       PGHOST: postgres
       PGUSER: postgres
       PGDATABASE: postgres
+    volumes:
+      - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/sql/"
     entrypoint:
       - "/bin/bash"
       - "-o"
@@ -90,6 +91,12 @@ services:
           >&2 echo "Postgres is unavailable - sleeping"
           sleep 5
         done
+        psql -c 'DROP DATABASE IF EXISTS game_changer;'
+        psql -c 'DROP DATABASE IF EXISTS "gc-orchestration";'
+        psql -c 'DROP DATABASE IF EXISTS "uot";'
+        psql -c 'CREATE DATABASE game_changer;'
+        psql -c 'CREATE DATABASE "gc-orchestration";'
+        psql -c "CREATE DATABASE uot WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE = 'en_US.UTF-8';"
     networks:
       - app-net
 
@@ -118,7 +125,7 @@ services:
       PGPASSWORD: password
       PGHOST: postgres
       PGUSER: postgres
-      PGDATABASE: postgres
+      PGDATABASE: game_changer
     entrypoint:
       - "/bin/bash"
       - "-o"
@@ -129,13 +136,16 @@ services:
       - "nounset"
       - "-c"
     volumes:
-      - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/sql/:Z"
+      - "./deploy/build/gamechanger-web/backend/node_app/init:/tmp/sql"
+      - "./deploy/build/gamechanger-web/backend/node_app/sql:/tmp/sql2"
     command:
       - |
-        psql -f /tmp/sql/pop_mini_RE.sql
         psql -f /tmp/sql/create_admins.sql
+        cd /tmp/sql2
+        psql -f ./v7-update-responsibility-data.sql
     networks:
       - app-net
+
 
   _postgres_config_step_3_setup_um_schema:
     image: "${GC_POSTGRES_IMAGE}"
@@ -145,7 +155,7 @@ services:
       PGPASSWORD: password
       PGHOST: postgres
       PGUSER: postgres
-      PGDATABASE: postgres
+      PGDATABASE: game_changer
     entrypoint:
       - "/bin/bash"
       - "-o"
@@ -156,9 +166,10 @@ services:
       - "nounset"
       - "-c"
     volumes:
-      - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/sql/:Z"
+      - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/sql/"
     command:
       - |
+        psql -f /tmp/sql/create_clones.sql
         psql -f /tmp/sql/create_um_tables.sql
     networks:
       - app-net
@@ -166,7 +177,7 @@ services:
   _postgres_config_step_2_setup_data_schema:
     image: "${GC_DATA_PIPELINES_IMAGE}"
     volumes:
-      - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered/:Z"
+      - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered"
     command:
       - "/bin/bash"
       - "-o"
@@ -186,12 +197,16 @@ services:
     environment:
       POSTGRES_HOST_GAME_CHANGER: postgres
       POSTGRES_HOST_GC_ORCHESTRATION: postgres
-      POSTGRES_DB_GAME_CHANGER: postgres
-      POSTGRES_DB_GC_ORCHESTRATION: postgres
+      POSTGRES_HOST_UOT: postgres
+      POSTGRES_DB_GAME_CHANGER: game_changer
+      POSTGRES_DB_GC_ORCHESTRATION: gc-orchestration
+      POSTGRES_DB_UOT: uot
       POSTGRES_USER_GAME_CHANGER: postgres
       POSTGRES_USER_GC_ORCHESTRATION: postgres
+      POSTGRES_USER_UOT: postgres
       POSTGRES_PASSWORD_GAME_CHANGER: password
       POSTGRES_PASSWORD_GC_ORCHESTRATION: password
+      POSTGRES_PASSWORD_UOT: password
     entrypoint:
       - "/bin/bash"
       - "-o"
@@ -201,8 +216,11 @@ services:
       - "-o"
       - "nounset"
       - "-c"
+    volumes:
+      - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/sql/"
     command:
       - |
+        cd /opt/app-root/src/backend
         _urlenc_pass=$$(2>/dev/null node -e "console.log(encodeURIComponent(process.env.POSTGRES_PASSWORD_GAME_CHANGER))")
         sequelize db:migrate \
           --options-path ./.sequelize-game_changer \
@@ -236,7 +254,7 @@ services:
         (mc ls s3-server | grep -q $$BUCKET_NAME) || mc mb s3-server/"$${BUCKET_NAME}"
     networks:
       - app-net
-  
+
   _update_primary_clone_config:
     image: "${GC_DATA_PIPELINES_IMAGE}"
     user: root
@@ -246,9 +264,9 @@ services:
       PGPASSWORD: password
       PGHOST: postgres
       PGUSER: postgres
-      PGDATABASE: postgres
+      PGDATABASE: game_changer
     volumes:
-      - "./deploy/build/gamechanger-web/backend/node_app/init/:/tmp/scripts/:Z"
+      - "./deploy/build/gamechanger-web/backend/node_app/init:/tmp/scripts"
     entrypoint:
       - "/bin/bash"
       - "-o"
@@ -264,12 +282,12 @@ services:
         psql -f /tmp/update.sql
     networks:
       - app-net
-  
+
   _ensure_and_populate_basic_es_indices:
     image: "${GC_DATA_PIPELINES_IMAGE}"
     user: root
     volumes:
-      - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered/:Z"
+      - "data-pipelines-rendered-config:/opt/app-root/src/configuration/rendered"
     entrypoint:
       - "/bin/bash"
       - "-o"
@@ -284,17 +302,17 @@ services:
         python -m dataPipelines.gc_elasticsearch_publisher setup-index \
           -i search_history_original \
           -a search_history \
-          -m ./configuration/elasticsearch-config/local-search_history.json
+          -m ./configuration/elasticsearch-config/prod-search_history.json
 
         python -m dataPipelines.gc_elasticsearch_publisher setup-index \
           -i gamechanger_original \
           -a gamechanger \
-          -m ./configuration/elasticsearch-config/local.json
+          -m ./configuration/elasticsearch-config/prod.json
 
         python -m dataPipelines.gc_elasticsearch_publisher entity-insert \
           -i entities_original \
           -a entities \
-          -m /opt/app-root/src/configuration/elasticsearch-config/local-entities.json
+          -m /opt/app-root/src/configuration/elasticsearch-config/prod-entities.json
 
     networks:
       - app-net
@@ -324,7 +342,6 @@ services:
       - "-c"
     command:
       - |
-        python -m configuration init --app-config docker --elasticsearch-config local docker
+        python -m configuration init --app-config docker --elasticsearch-config prod docker
     networks:
       - app-net
-    

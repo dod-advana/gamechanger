@@ -1,14 +1,15 @@
+---
 services:
   web:
     image: "${GC_WEB_IMAGE}"
     container_name: "${COMPOSE_PROJECT_NAME:-gc}-web"
     user: "1000:1000"
     environment:
-      REACT_APP_GC_DECOUPLED: "true"
-      REACT_APP_NODE_ENV: "development"
-      REACT_APP_GLUU_SSO: "disabled"
       REACT_APP_BACKEND_URL: "http://localhost:8080"
-      REACT_APP_MATOMO_LINK: "http://matomo"
+      REACT_APP_GC_DECOUPLED: "true"
+      REACT_APP_NODE_ENV: "production"
+      REACT_APP_GLUU_SSO: "disabled"
+      REACT_APP_MATOMO_LINK: "matomo"
       REACT_APP_DATA_CATALOG_LINK: "http://data-catalog.local:8443"
       REACT_APP_CLASSIFICATION_BANNER: "UNCLASSIFIED"
       REACT_APP_CLASSIFICATION_BANNER_COLOR: "GREEN"
@@ -26,7 +27,10 @@ services:
       S3_ACCESS_KEY: "dev-access-key"
       S3_SECRET_KEY: "dev-secret-key"
       S3_ENDPOINT: "http://s3-server:9000"
-  
+      MYSQL_HOST_MATOMO: "mysql"
+      MYSQL_USER_MATOMO: "root"
+      MYSQL_PASSWORD_MATOMO: "password"
+#      CHOKIDAR_USEPOLLING: "true"
     depends_on:
       - redis
       - postgres
@@ -40,44 +44,40 @@ services:
       - "-ec"
     command:
       - |
-        mkdir -p /opt/app-root/src/secrets/
-        openssl genrsa -out /opt/app-root/src/secrets/tls_key.key 4096
-        openssl req -x509 -sha256 -days 3650 \
-          -key /opt/app-root/src/secrets/tls_key.key \
-          -out /opt/app-root/src/secrets/tls_cert.cer \
-          -subj "/CN=gamechanger.local" \
-          -addext 'subjectAltName=DNS:*.local,DNS:*.com,DNS:*'
-        
-        cp /opt/app-root/src/secrets/tls_cert.cer /opt/app-root/src/secrets/ca_bundle.pem
-        
-        export SAML_CERT="$$(openssl rsa -in /opt/app-root/src/secrets/tls_key.key -pubout)"
-
-        /opt/app-root/src/generateCombinedEnv.sh > ./.env
-
+        cd /opt/app-root/src/backend
         node index.js
 
   ml-api:
     image: "${GC_ML_API_IMAGE}"
     container_name: "${COMPOSE_PROJECT_NAME:-gc}-ml-api"
-    user: "1001:1001"
+    user: "1000:1000"
     depends_on:
       - redis
     environment:
-      ENV_TYPE: DEVLOCAL
+      ENV_TYPE: "PROD"
       DOWNLOAD_DEP: "false"
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      ES_HOST: elasticsearch
+      ES_PORT: 9200
+      ES_USER: elasticsearch
+      ES_PASSWORD: elasticsearch
+      GC_WEB_USER: "007"
+      GC_WEB_HOST: gc-web
+      GC_WEB_PORT: 8080
+      GC_WEB_USER: "007"
     ports:
       - "5000:5000"
     volumes:
-      - "ml-api-data:/opt/app-root/src/gamechangerml/models"
+      - "/mnt/extra/models:/opt/app-root/src/gamechangerml/models:rw"
     networks:
       - app-net
 
   redis:
     image: "${GC_REDIS_IMAGE}"
     container_name: "${COMPOSE_PROJECT_NAME:-gc}-redis"
-    user: root
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
     ports:
       - "6379:6379"
     volumes:
@@ -88,7 +88,7 @@ services:
 
   neo4j:
     image: "${GC_NEO4J_IMAGE}"
-    build: 
+    build:
       context: "./deploy/build/gamechanger-neo4j-plugin/"
       dockerfile: "./docker/debian.Dockerfile"
     container_name: "${COMPOSE_PROJECT_NAME:-gc}-neo4j"
@@ -112,18 +112,23 @@ services:
     volumes:
       - "es-data:/usr/share/elasticsearch/data"
     environment:
-      - "discovery.type=single-node"
+      discovery.type: single-node
+      ELASTIC_PASSWORD: elasticsearch
+      ES_JAVA_OPTS: -Xms4096m -Xmx4096m
     networks:
       - app-net
 
   kibana:
     image: "${GC_KIBANA_IMAGE}"
     container_name: "${COMPOSE_PROJECT_NAME:-gc}-kibana"
-    user: root
     depends_on:
       - elasticsearch
     ports:
       - "5601:5601"
+    volumes:
+      - ./deploy/docker-compose/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    environment:
+      - KIBANA_SYSTEM_PASSWORD=elasticsearch
     networks:
       - app-net
 
@@ -135,7 +140,7 @@ services:
       - "9000:9000"
     volumes:
       - "s3-data:/s3-data"
-    environment: 
+    environment:
       - "MINIO_ACCESS_KEY=dev-access-key"
       - "MINIO_SECRET_KEY=dev-secret-key"
       - "MINIO_REGION_NAME=us-east-1"
@@ -153,11 +158,12 @@ services:
       - "5432:5432"
     volumes:
       - "pg-data:/pg-data"
-    environment: 
+    environment:
       - "POSTGRES_USER=postgres"
       - "POSTGRES_PASSWORD=password"
       - "POSTGRES_DB=postgres"
       - "PGDATA=/pg-data"
+#      - "POSTGRES_HOST_AUTH_METHOD=trust"
     networks:
       - app-net
 
@@ -166,3 +172,37 @@ services:
     container_name: "${COMPOSE_PROJECT_NAME:-gc}-data-pipelines"
     command:
       - "true"
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=matomo
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - mysql:/var/lib/mysql
+    restart: always
+    networks:
+      - app-net
+
+  matomo:
+    image: matomo:4.3
+    container_name: matomo
+    environment:
+      - MATOMO_DATABASE_HOST=mysql
+      - MATOMO_DATABASE_USERNAME=root
+      - MATOMO_DATABASE_PASSWORD=password
+      - MATOMO_DATABASE_DBNAME=matomo
+    depends_on:
+      - mysql
+    ports:
+      - 80:80
+    volumes:
+      - matomo:/var/www/html
+    networks:
+      - app-net
+
+volumes:
+    mysql:
+    matomo:

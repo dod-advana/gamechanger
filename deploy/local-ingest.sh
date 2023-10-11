@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 REPO_DIR="$(cd -- "${SCRIPT_DIR}/../" &> /dev/null && pwd)"
 DEPLOY_CONF="${SCRIPT_DIR}/deploy.conf.sh"
 
+echo "REPO_DIR=$REPO_DIR"
 source "$DEPLOY_CONF"
 
 function main() (
