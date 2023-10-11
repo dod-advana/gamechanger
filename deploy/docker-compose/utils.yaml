@@ -232,12 +232,6 @@ services:
           --options-path ./.sequelize-gc-orchestration \
           --env gc_orchestration \
           --url "postgresql://$${POSTGRES_USER_GC_ORCHESTRATION}:$${_urlenc_pass}@$${POSTGRES_HOST_GC_ORCHESTRATION}/$${POSTGRES_DB_GC_ORCHESTRATION}"
-
-#        _urlenc_pass=$$(2>/dev/null node -e "console.log(encodeURIComponent(process.env.POSTGRES_PASSWORD_UOT))")
-#        sequelize db:migrate \
-#          --options-path ./.sequelize-uot \
-#          --env uot \
-#          --url "postgresql://$${POSTGRES_USER_UOT}:$${_urlenc_pass}@$${POSTGRES_HOST_UOT}/$${POSTGRES_DB_UOT}"
     networks:
       - app-net
 

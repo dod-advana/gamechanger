@@ -58,6 +58,13 @@ services:
       DOWNLOAD_DEP: "false"
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      ES_HOST: elasticsearch
+      ES_PORT: 9200
+      ES_USER: elasticsearch
+      ES_PASSWORD: elasticsearch
+      GC_WEB_USER: "007"
+      GC_WEB_HOST: gc-web
+      GC_WEB_PORT: 8080
       GC_WEB_USER: "007"
     ports:
       - "5000:5000"
@@ -105,18 +112,23 @@ services:
     volumes:
       - "es-data:/usr/share/elasticsearch/data"
     environment:
-      - "discovery.type=single-node"
+      discovery.type: single-node
+      ELASTIC_PASSWORD: elasticsearch
+      ES_JAVA_OPTS: -Xms4096m -Xmx4096m
     networks:
       - app-net
 
   kibana:
     image: "${GC_KIBANA_IMAGE}"
     container_name: "${COMPOSE_PROJECT_NAME:-gc}-kibana"
-    user: root
     depends_on:
       - elasticsearch
     ports:
       - "5601:5601"
+    volumes:
+      - ./deploy/docker-compose/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    environment:
+      - KIBANA_SYSTEM_PASSWORD=elasticsearch
     networks:
       - app-net
 
