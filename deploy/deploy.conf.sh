@@ -27,7 +27,7 @@ declare -A REPO_URL_MAP=(\
 
 declare -A REPO_TAG_MAP=(\
   [gamechanger-web]="dev" \
-  [gamechanger-data]="hotfix/k8s-docker-update" \
+  [gamechanger-data]="dev" \
   [gamechanger-ml]="dev" \
   [gamechanger-neo4j-plugin]="main" \
   [gamechanger-crawlers]="dev" \
